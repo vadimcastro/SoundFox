@@ -26,21 +26,21 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </div>
       <input type="range" id="volSlider" min="0" max="600" value="100" />
       <div class="presets-row">
-        <button class="preset-btn" data-val="50" title="Half Volume (50%)">9</button>
-        <button class="preset-btn" data-val="0" title="Mute (0%)">0</button>
-        <button class="preset-btn" data-val="100">1</button>
-        <button class="preset-btn" data-val="200">2</button>
-        <button class="preset-btn" data-val="300">3</button>
-        <button class="preset-btn" data-val="400">4</button>
-        <button class="preset-btn" data-val="500">5</button>
-        <button class="preset-btn" data-val="600">6</button>
+        <button class="preset-btn" data-val="0" title="Mute [Shortcut: 0]">0</button>
+        <button class="preset-btn" data-val="50" title="50% Volume [Shortcut: 9]">1/2</button>
+        <button class="preset-btn" data-val="100" title="100% Volume [Shortcut: 1]">1</button>
+        <button class="preset-btn" data-val="200" title="200% Volume [Shortcut: 2]">2</button>
+        <button class="preset-btn" data-val="300" title="300% Volume [Shortcut: 3]">3</button>
+        <button class="preset-btn" data-val="400" title="400% Volume [Shortcut: 4]">4</button>
+        <button class="preset-btn" data-val="500" title="500% Volume [Shortcut: 5]">5</button>
+        <button class="preset-btn" data-val="600" title="600% Volume [Shortcut: 6]">6</button>
       </div>
     </div>
 
     <div class="controls-grid">
-      <button class="toggle-btn active compact" id="btnEq">Flat</button>
-      <button class="toggle-btn compact" id="btnBass">Bass</button>
-      <button class="toggle-btn compact night-mode" id="btnNight" title="Compression to equal out loud bangs and quiet whispers">Night</button>
+      <button class="toggle-btn active compact" id="btnEq" title="Standard uncolored audio output">Flat</button>
+      <button class="toggle-btn compact" id="btnBass" title="Applies a +15dB filter to amplify tracking bass frequencies">Bass</button>
+      <button class="toggle-btn compact night-mode" id="btnNight" title="Engages a dynamic compressor to soften loud peaks and amplify quiet dialogue">Night</button>
     </div>
   </div>
 `
