@@ -6,7 +6,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div class="header-row compact">
       <img src="speaker.svg" alt="Icon" class="speaker-icon mini" />
       <h1 class="mini">SoundFox</h1>
-      <span class="version">v1.1</span>
+      <span class="version">v1.2.0</span>
     </div>
 
     <div class="meter-container">
