@@ -31,6 +31,28 @@ try {
   }).catch(() => {});
 } catch (e) {}
 
+// Multi-DOM Synchronizer: Pipes updates from root frame to embedded <iframe> video containers
+browser.storage.onChanged.addListener((changes, area) => {
+  if (area === "local") {
+    if (changes.volume && changes.volume.newValue !== undefined) {
+      currentVolume = changes.volume.newValue as number;
+      if (gainNode) gainNode.gain.value = currentVolume;
+    }
+    if (changes.eq && changes.eq.newValue !== undefined) {
+      currentEq = changes.eq.newValue as string;
+      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+    }
+    if (changes.dialogMode && changes.dialogMode.newValue !== undefined) {
+      currentDialogMode = changes.dialogMode.newValue as boolean;
+      updateGraphRouting();
+    }
+    if (changes.autoLevel && changes.autoLevel.newValue !== undefined) {
+      currentAutoLevel = changes.autoLevel.newValue as boolean;
+      updateGraphRouting();
+    }
+  }
+});
+
 function updateGraphRouting() {
   if (!biquadFilter || !compressorNode || !levelerNode || !gainNode) return;
   
@@ -122,55 +144,41 @@ const observer = new MutationObserver(() => {
 });
 observer.observe(document.body, { childList: true, subtree: true });
 
-// Listen for messages from the Popup
+// Listen for messages from the Popup (Always hits the outer Top Frame)
 browser.runtime.onMessage.addListener((message: any) => {
-  // Automatically force resume on user interaction to bypass modern Auto-Play audio suspension policies
   if (audioCtx && audioCtx.state === "suspended") {
     audioCtx.resume();
   }
 
   if (message.action === "setVolume") {
+    currentVolume = message.value;
+    try { browser.storage.local.set({ volume: currentVolume }); } catch(e) {}
     if (gainNode && audioCtx) {
       if (message.value === 0) {
         mediaElements.forEach(el => el.muted = true);
         gainNode.gain.value = 0;
-        console.log("SoundFox: Fully Muted Output");
       } else {
         mediaElements.forEach(el => el.muted = false);
-        // Direct assignment immediately propagates state regardless of isolated Extension clock desyncs
         gainNode.gain.value = message.value;
-        console.log(`SoundFox: Volume set to ${message.value * 100}%`);
       }
-      currentVolume = message.value;
-      browser.storage.local.set({ volume: currentVolume });
-    } else {
-      console.warn("SoundFox: Cannot set volume, no media element initialized yet.");
     }
   } else if (message.action === "setEq") {
+    currentEq = message.mode;
+    try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
     if (biquadFilter && audioCtx) {
-      if (message.mode === "bass") {
-        biquadFilter.gain.value = 15; // +15dB of Bass
-        console.log("SoundFox: Bass Boost enabled");
-      } else {
-        biquadFilter.gain.value = 0; // Flat
-        console.log("SoundFox: Flat EQ enabled");
-      }
-      currentEq = message.mode;
-      browser.storage.local.set({ eq: currentEq });
+      biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
     }
   } else if (message.action === "setDialogMode") {
+    currentDialogMode = message.active;
+    try { browser.storage.local.set({ dialogMode: currentDialogMode }); } catch(e) {}
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
-      currentDialogMode = message.active;
-      browser.storage.local.set({ dialogMode: currentDialogMode });
       updateGraphRouting();
-      console.log(`SoundFox: Dialog Mode ${currentDialogMode ? 'Spliced In' : 'Bypassed'}`);
     }
   } else if (message.action === "setAutoLevel") {
+    currentAutoLevel = message.active;
+    try { browser.storage.local.set({ autoLevel: currentAutoLevel }); } catch(e) {}
     if (levelerNode && biquadFilter && gainNode && audioCtx) {
-      currentAutoLevel = message.active;
-      browser.storage.local.set({ autoLevel: currentAutoLevel });
       updateGraphRouting();
-      console.log(`SoundFox: Auto-Level Mode ${currentAutoLevel ? 'Spliced In' : 'Bypassed'}`);
     }
   } else if (message.action === "getState") {
     return Promise.resolve({
