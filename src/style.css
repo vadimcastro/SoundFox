@@ -1,13 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
+  --primary: #9d4edd;
+  --primary-hover: #c77dff;
   --bg-color: #0c111d;
   --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --primary: #8b5cf6;
-  --secondary: #ec4899;
-  --night: #f97316;
-  --text-main: #f8fafc;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --dialog: #f97316;
+  --level: #14b8a6;
+  --text-main: #ffffff;
   --text-muted: #94a3b8;
 }
 
@@ -299,8 +300,14 @@ input[type=range]::-moz-range-thumb:hover {
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
-.toggle-btn.night-mode.active {
-  background: var(--night);
-  border-color: var(--night);
+.toggle-btn.dialog-mode.active {
+  background: var(--dialog);
+  border-color: var(--dialog);
   box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
+}
+
+.toggle-btn.auto-level.active {
+  background: var(--level);
+  border-color: var(--level);
+  box-shadow: 0 4px 16px rgba(20, 184, 166, 0.4);
 }

@@ -6,12 +6,37 @@ let audioCtx: AudioContext | null = null;
 let gainNode: GainNode | null = null;
 let biquadFilter: BiquadFilterNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
+let levelerNode: DynamicsCompressorNode | null = null;
 let analyser: AnalyserNode | null = null;
 const mediaElements = new Set<HTMLMediaElement>();
 
 let currentVolume = 1;
 let currentEq = "flat";
-let currentNightMode = false;
+let currentDialogMode = false;
+let currentAutoLevel = false;
+
+function updateGraphRouting() {
+  if (!biquadFilter || !compressorNode || !levelerNode || !gainNode) return;
+  
+  // Decouple everything to reset baseline
+  biquadFilter.disconnect();
+  compressorNode.disconnect();
+  levelerNode.disconnect();
+
+  let lastNode: AudioNode = biquadFilter;
+  
+  if (currentDialogMode) {
+    lastNode.connect(compressorNode);
+    lastNode = compressorNode;
+  }
+  
+  if (currentAutoLevel) {
+    lastNode.connect(levelerNode);
+    lastNode = levelerNode;
+  }
+  
+  lastNode.connect(gainNode);
+}
 
 function initAudioContext() {
   if (!audioCtx) {
@@ -19,6 +44,7 @@ function initAudioContext() {
     gainNode = audioCtx.createGain();
     biquadFilter = audioCtx.createBiquadFilter();
     compressorNode = audioCtx.createDynamicsCompressor();
+    levelerNode = audioCtx.createDynamicsCompressor();
     analyser = audioCtx.createAnalyser();
     
     // Lowshelf filter specifically hits lower frequency bands
@@ -26,12 +52,19 @@ function initAudioContext() {
     biquadFilter.frequency.value = 150; // Boost below 150hz
     biquadFilter.gain.value = 0; // Starts flat
 
-    // Setup Compressor Settings to be ready when spliced
-    compressorNode.threshold.value = -35; 
-    compressorNode.knee.value = 20;
-    compressorNode.ratio.value = 12; 
+    // Dialog Mode (Micro-dynamics: Soften hard peaks, boost dialogue)
+    compressorNode.threshold.value = -45; 
+    compressorNode.knee.value = 30;
+    compressorNode.ratio.value = 15; 
     compressorNode.attack.value = 0.005;
     compressorNode.release.value = 0.25;
+
+    // Auto-Level Mode (Macro-dynamics: Ride the fader evenly across entire episodes)
+    levelerNode.threshold.value = -35;
+    levelerNode.knee.value = 25;
+    levelerNode.ratio.value = 4;
+    levelerNode.attack.value = 0.5;
+    levelerNode.release.value = 1.0;
 
     // Metric Analyser Setup
     analyser.fftSize = 2048; // Better RMS resolution
@@ -107,30 +140,24 @@ browser.runtime.onMessage.addListener((message: any) => {
       }
       currentEq = message.mode;
     }
-  } else if (message.action === "setNightMode") {
+  } else if (message.action === "setDialogMode") {
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
-      if (message.active) {
-        // Dynamically Splice Compressor into active graph
-        biquadFilter.disconnect();
-        
-        biquadFilter.connect(compressorNode);
-        compressorNode.connect(gainNode);
-        console.log("SoundFox: Night Mode Compressor Spliced In");
-      } else {
-        // Return to Standard Bypassed Baseline Prototype
-        biquadFilter.disconnect();
-        compressorNode.disconnect();
-        
-        biquadFilter.connect(gainNode);
-        console.log("SoundFox: Night Mode Bypassed");
-      }
-      currentNightMode = message.active;
+      currentDialogMode = message.active;
+      updateGraphRouting();
+      console.log(`SoundFox: Dialog Mode ${currentDialogMode ? 'Spliced In' : 'Bypassed'}`);
+    }
+  } else if (message.action === "setAutoLevel") {
+    if (levelerNode && biquadFilter && gainNode && audioCtx) {
+      currentAutoLevel = message.active;
+      updateGraphRouting();
+      console.log(`SoundFox: Auto-Level Mode ${currentAutoLevel ? 'Spliced In' : 'Bypassed'}`);
     }
   } else if (message.action === "getState") {
     return Promise.resolve({
       volume: currentVolume,
       eq: currentEq,
-      nightMode: currentNightMode
+      dialogMode: currentDialogMode,
+      autoLevel: currentAutoLevel
     });
   } else if (message.action === "requestDb") {
     let db = -100;

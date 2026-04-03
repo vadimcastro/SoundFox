@@ -40,7 +40,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div class="controls-grid">
       <button class="toggle-btn active compact" id="btnEq" title="Standard uncolored audio output">Flat</button>
       <button class="toggle-btn compact" id="btnBass" title="Applies a +15dB filter to amplify tracking bass frequencies">Bass</button>
-      <button class="toggle-btn compact night-mode" id="btnNight" title="Engages a dynamic compressor to soften loud peaks and amplify quiet dialogue">Night</button>
+      <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Squashes loud peaks and bumps up quiet voices in intense media">Dialog</button>
+      <button class="toggle-btn compact auto-level" id="btnLevel" title="Smoothly rides the volume fader across different episodes to prevent massive drops or jumps in overall scene volume">Auto-Level</button>
     </div>
   </div>
 `
@@ -104,7 +105,8 @@ document.addEventListener('keydown', (e) => {
 
 const btnEq = document.getElementById('btnEq') as HTMLButtonElement;
 const btnBass = document.getElementById('btnBass') as HTMLButtonElement;
-const btnNight = document.getElementById('btnNight') as HTMLButtonElement;
+const btnDialog = document.getElementById('btnDialog') as HTMLButtonElement;
+const btnLevel = document.getElementById('btnLevel') as HTMLButtonElement;
 
 btnEq.addEventListener('click', async () => {
   btnEq.classList.add('active');
@@ -124,14 +126,25 @@ btnBass.addEventListener('click', async () => {
   } catch(e) {}
 });
 
-let nightModeActive = false;
-btnNight.addEventListener('click', async () => {
-  nightModeActive = !nightModeActive;
-  if (nightModeActive) btnNight.classList.add('active');
-  else btnNight.classList.remove('active');
+let dialogModeActive = false;
+btnDialog.addEventListener('click', async () => {
+  dialogModeActive = !dialogModeActive;
+  if (dialogModeActive) btnDialog.classList.add('active');
+  else btnDialog.classList.remove('active');
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setNightMode", active: nightModeActive });
+    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setDialogMode", active: dialogModeActive });
+  } catch(e) {}
+});
+
+let autoLevelActive = false;
+btnLevel.addEventListener('click', async () => {
+  autoLevelActive = !autoLevelActive;
+  if (autoLevelActive) btnLevel.classList.add('active');
+  else btnLevel.classList.remove('active');
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setAutoLevel", active: autoLevelActive });
   } catch(e) {}
 });
 
@@ -152,9 +165,21 @@ btnNight.addEventListener('click', async () => {
           btnBass.classList.remove('active');
         }
 
-        nightModeActive = state.nightMode;
-        if (nightModeActive) btnNight.classList.add('active');
-        else btnNight.classList.remove('active');
+        if (state.dialogMode) {
+          btnDialog.classList.add('active');
+          dialogModeActive = true;
+        } else {
+          btnDialog.classList.remove('active');
+          dialogModeActive = false;
+        }
+        
+        if (state.autoLevel) {
+          btnLevel.classList.add('active');
+          autoLevelActive = true;
+        } else {
+          btnLevel.classList.remove('active');
+          autoLevelActive = false;
+        }
       }
     }
   } catch (e) {
