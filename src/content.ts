@@ -16,18 +16,20 @@ let currentDialogMode = false;
 let currentAutoLevel = false;
 
 // Async init variables from storage to ensure state persists across video/episode reloads
-browser.storage.local.get(["volume", "eq", "dialogMode", "autoLevel"]).then((data) => {
-  if (data.volume !== undefined) currentVolume = data.volume;
-  if (data.eq !== undefined) currentEq = data.eq;
-  if (data.dialogMode !== undefined) currentDialogMode = data.dialogMode;
-  if (data.autoLevel !== undefined) currentAutoLevel = data.autoLevel;
-  
-  if (audioCtx) {
-    if (gainNode) gainNode.gain.value = currentVolume;
-    if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
-    updateGraphRouting();
-  }
-});
+try {
+  browser.storage.local.get(["volume", "eq", "dialogMode", "autoLevel"]).then((data) => {
+    if (data.volume !== undefined) currentVolume = data.volume as number;
+    if (data.eq !== undefined) currentEq = data.eq as string;
+    if (data.dialogMode !== undefined) currentDialogMode = data.dialogMode as boolean;
+    if (data.autoLevel !== undefined) currentAutoLevel = data.autoLevel as boolean;
+    
+    if (audioCtx) {
+      if (gainNode) gainNode.gain.value = currentVolume;
+      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+      updateGraphRouting();
+    }
+  }).catch(() => {});
+} catch (e) {}
 
 function updateGraphRouting() {
   if (!biquadFilter || !compressorNode || !levelerNode || !gainNode) return;
