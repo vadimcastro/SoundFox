@@ -26,21 +26,22 @@ function initAudioContext() {
     biquadFilter.frequency.value = 150; // Boost below 150hz
     biquadFilter.gain.value = 0; // Starts flat
 
-    // Default Master Brickwall Limiter (Prevents Hardware Distortion when Gain hits 600%)
-    compressorNode.threshold.value = -1; // Clamp right before 0dBFS
+    // Default Limiter Passthrough
+    compressorNode.threshold.value = 0; 
     compressorNode.knee.value = 0;
-    compressorNode.ratio.value = 20; // Hard limiting ratio
-    compressorNode.attack.value = 0.002;
-    compressorNode.release.value = 0.05;
+    compressorNode.ratio.value = 1; 
+    compressorNode.attack.value = 0;
+    compressorNode.release.value = 0.25;
 
     // Metric Analyser Setup
     analyser.fftSize = 2048; // Better RMS resolution
     analyser.smoothingTimeConstant = 0.5;
 
-    // Secure node topology: EQ -> Gain Drive -> Limiter (prevent peaking) -> Analyser -> Dest
-    biquadFilter.connect(gainNode);
-    gainNode.connect(compressorNode);
-    compressorNode.connect(analyser); 
+    // Secure node topology: EQ -> Compressor -> Gain Drive -> Analyser -> Dest
+    // Shifting Gain LAST guarantees the booster is successfully applied mathematically to hardware DAC
+    biquadFilter.connect(compressorNode);
+    compressorNode.connect(gainNode);
+    gainNode.connect(analyser); 
     analyser.connect(audioCtx.destination);
   }
 }
@@ -119,12 +120,12 @@ browser.runtime.onMessage.addListener((message: any) => {
         compressorNode.release.setTargetAtTime(0.25, audioCtx.currentTime, 0.1);
         console.log("SoundFox: Night Mode enabled");
       } else {
-        // Return to Standard Limiter Mode
-        compressorNode.threshold.setTargetAtTime(-1, audioCtx.currentTime, 0.1);
+        // Return to Standard Passthrough
+        compressorNode.threshold.setTargetAtTime(0, audioCtx.currentTime, 0.1);
         compressorNode.knee.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-        compressorNode.ratio.setTargetAtTime(20, audioCtx.currentTime, 0.1);
-        compressorNode.attack.setTargetAtTime(0.002, audioCtx.currentTime, 0.1);
-        compressorNode.release.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
+        compressorNode.ratio.setTargetAtTime(1, audioCtx.currentTime, 0.1);
+        compressorNode.attack.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        compressorNode.release.setTargetAtTime(0.25, audioCtx.currentTime, 0.1);
         console.log("SoundFox: Night Mode disabled");
       }
       currentNightMode = message.active;
