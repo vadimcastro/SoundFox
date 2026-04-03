@@ -90,8 +90,8 @@ browser.runtime.onMessage.addListener((message: any) => {
         console.log("SoundFox: Fully Muted Output");
       } else {
         mediaElements.forEach(el => el.muted = false);
-        // Use setTargetAtTime to prevent audio pop/clicking during aggressive adjustments
-        gainNode.gain.setTargetAtTime(message.value, audioCtx.currentTime, 0.05);
+        // Direct assignment immediately propagates state regardless of isolated Extension clock desyncs
+        gainNode.gain.value = message.value;
         console.log(`SoundFox: Volume set to ${message.value * 100}%`);
       }
       currentVolume = message.value;
@@ -101,10 +101,10 @@ browser.runtime.onMessage.addListener((message: any) => {
   } else if (message.action === "setEq") {
     if (biquadFilter && audioCtx) {
       if (message.mode === "bass") {
-        biquadFilter.gain.setTargetAtTime(15, audioCtx.currentTime, 0.1); // +15dB of Bass
+        biquadFilter.gain.value = 15; // +15dB of Bass
         console.log("SoundFox: Bass Boost enabled");
       } else {
-        biquadFilter.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); // Flat
+        biquadFilter.gain.value = 0; // Flat
         console.log("SoundFox: Flat EQ enabled");
       }
       currentEq = message.mode;
@@ -113,19 +113,19 @@ browser.runtime.onMessage.addListener((message: any) => {
     if (compressorNode && audioCtx) {
       if (message.active) {
         // Night Mode: Aggressively compress dynamic range for normalized viewing
-        compressorNode.threshold.setTargetAtTime(-45, audioCtx.currentTime, 0.1);
-        compressorNode.knee.setTargetAtTime(30, audioCtx.currentTime, 0.1);
-        compressorNode.ratio.setTargetAtTime(15, audioCtx.currentTime, 0.1);
-        compressorNode.attack.setTargetAtTime(0.005, audioCtx.currentTime, 0.1);
-        compressorNode.release.setTargetAtTime(0.25, audioCtx.currentTime, 0.1);
+        compressorNode.threshold.value = -45;
+        compressorNode.knee.value = 30;
+        compressorNode.ratio.value = 15;
+        compressorNode.attack.value = 0.005;
+        compressorNode.release.value = 0.25;
         console.log("SoundFox: Night Mode enabled");
       } else {
         // Return to Standard Passthrough
-        compressorNode.threshold.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-        compressorNode.knee.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-        compressorNode.ratio.setTargetAtTime(1, audioCtx.currentTime, 0.1);
-        compressorNode.attack.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-        compressorNode.release.setTargetAtTime(0.25, audioCtx.currentTime, 0.1);
+        compressorNode.threshold.value = 0;
+        compressorNode.knee.value = 0;
+        compressorNode.ratio.value = 1;
+        compressorNode.attack.value = 0;
+        compressorNode.release.value = 0.25;
         console.log("SoundFox: Night Mode disabled");
       }
       currentNightMode = message.active;
