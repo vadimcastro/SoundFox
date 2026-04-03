@@ -108,7 +108,7 @@ browser.runtime.onMessage.addListener((message: any) => {
       currentEq = message.mode;
     }
   } else if (message.action === "setNightMode") {
-    if (compressorNode && biquadFilter && audioCtx) {
+    if (compressorNode && biquadFilter && gainNode && audioCtx) {
       if (message.active) {
         // Dynamically Splice Compressor into active graph
         biquadFilter.disconnect();
