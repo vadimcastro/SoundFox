@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "SoundFox",
+  "version": "1.0.0",
+  "description": "Sound booster & master for your browser.",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabCapture"
+  ],
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.ts"]
+    }
+  ]
+}

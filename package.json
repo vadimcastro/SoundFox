@@ -1,0 +1,22 @@
+{
+  "name": "soundfox",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:chrome": "BROWSER_TARGET=chrome vite build",
+    "build:firefox": "BROWSER_TARGET=firefox vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/webextension-polyfill": "^0.12.5",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1",
+    "vite-plugin-web-extension": "^4.5.0"
+  },
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
+  }
+}
