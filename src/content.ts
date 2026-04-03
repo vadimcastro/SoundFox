@@ -15,6 +15,20 @@ let currentEq = "flat";
 let currentDialogMode = false;
 let currentAutoLevel = false;
 
+// Async init variables from storage to ensure state persists across video/episode reloads
+browser.storage.local.get(["volume", "eq", "dialogMode", "autoLevel"]).then((data) => {
+  if (data.volume !== undefined) currentVolume = data.volume;
+  if (data.eq !== undefined) currentEq = data.eq;
+  if (data.dialogMode !== undefined) currentDialogMode = data.dialogMode;
+  if (data.autoLevel !== undefined) currentAutoLevel = data.autoLevel;
+  
+  if (audioCtx) {
+    if (gainNode) gainNode.gain.value = currentVolume;
+    if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+    updateGraphRouting();
+  }
+});
+
 function updateGraphRouting() {
   if (!biquadFilter || !compressorNode || !levelerNode || !gainNode) return;
   
@@ -126,6 +140,7 @@ browser.runtime.onMessage.addListener((message: any) => {
         console.log(`SoundFox: Volume set to ${message.value * 100}%`);
       }
       currentVolume = message.value;
+      browser.storage.local.set({ volume: currentVolume });
     } else {
       console.warn("SoundFox: Cannot set volume, no media element initialized yet.");
     }
@@ -139,16 +154,19 @@ browser.runtime.onMessage.addListener((message: any) => {
         console.log("SoundFox: Flat EQ enabled");
       }
       currentEq = message.mode;
+      browser.storage.local.set({ eq: currentEq });
     }
   } else if (message.action === "setDialogMode") {
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
       currentDialogMode = message.active;
+      browser.storage.local.set({ dialogMode: currentDialogMode });
       updateGraphRouting();
       console.log(`SoundFox: Dialog Mode ${currentDialogMode ? 'Spliced In' : 'Bypassed'}`);
     }
   } else if (message.action === "setAutoLevel") {
     if (levelerNode && biquadFilter && gainNode && audioCtx) {
       currentAutoLevel = message.active;
+      browser.storage.local.set({ autoLevel: currentAutoLevel });
       updateGraphRouting();
       console.log(`SoundFox: Auto-Level Mode ${currentAutoLevel ? 'Spliced In' : 'Bypassed'}`);
     }

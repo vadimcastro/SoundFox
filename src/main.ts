@@ -153,7 +153,7 @@ btnLevel.addEventListener('click', async () => {
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs[0] && tabs[0].id) {
-      const state = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
       if (state) {
         updateSliderUI(state.volume * 100);
         

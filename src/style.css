@@ -269,7 +269,8 @@ input[type=range]::-moz-range-thumb:hover {
 }
 
 .controls-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 10px;
   width: 100%;
