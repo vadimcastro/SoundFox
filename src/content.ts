@@ -26,21 +26,19 @@ function initAudioContext() {
     biquadFilter.frequency.value = 150; // Boost below 150hz
     biquadFilter.gain.value = 0; // Starts flat
 
-    // Default Limiter Passthrough
-    compressorNode.threshold.value = 0; 
-    compressorNode.knee.value = 0;
-    compressorNode.ratio.value = 1; 
-    compressorNode.attack.value = 0;
+    // Setup Compressor Settings to be ready when spliced
+    compressorNode.threshold.value = -35; 
+    compressorNode.knee.value = 20;
+    compressorNode.ratio.value = 12; 
+    compressorNode.attack.value = 0.005;
     compressorNode.release.value = 0.25;
 
     // Metric Analyser Setup
     analyser.fftSize = 2048; // Better RMS resolution
     analyser.smoothingTimeConstant = 0.5;
 
-    // Secure node topology: EQ -> Compressor -> Gain Drive -> Analyser -> Dest
-    // Shifting Gain LAST guarantees the booster is successfully applied mathematically to hardware DAC
-    biquadFilter.connect(compressorNode);
-    compressorNode.connect(gainNode);
+    // Default Node Topology (PROTOTYPE BASELINE: Bypasses Compressor Entirely)
+    biquadFilter.connect(gainNode);
     gainNode.connect(analyser); 
     analyser.connect(audioCtx.destination);
   }
@@ -110,23 +108,21 @@ browser.runtime.onMessage.addListener((message: any) => {
       currentEq = message.mode;
     }
   } else if (message.action === "setNightMode") {
-    if (compressorNode && audioCtx) {
+    if (compressorNode && biquadFilter && audioCtx) {
       if (message.active) {
-        // Night Mode: Aggressively compress dynamic range for normalized viewing
-        compressorNode.threshold.value = -45;
-        compressorNode.knee.value = 30;
-        compressorNode.ratio.value = 15;
-        compressorNode.attack.value = 0.005;
-        compressorNode.release.value = 0.25;
-        console.log("SoundFox: Night Mode enabled");
+        // Dynamically Splice Compressor into active graph
+        biquadFilter.disconnect();
+        
+        biquadFilter.connect(compressorNode);
+        compressorNode.connect(gainNode);
+        console.log("SoundFox: Night Mode Compressor Spliced In");
       } else {
-        // Return to Standard Passthrough
-        compressorNode.threshold.value = 0;
-        compressorNode.knee.value = 0;
-        compressorNode.ratio.value = 1;
-        compressorNode.attack.value = 0;
-        compressorNode.release.value = 0.25;
-        console.log("SoundFox: Night Mode disabled");
+        // Return to Standard Bypassed Baseline Prototype
+        biquadFilter.disconnect();
+        compressorNode.disconnect();
+        
+        biquadFilter.connect(gainNode);
+        console.log("SoundFox: Night Mode Bypassed");
       }
       currentNightMode = message.active;
     }
