@@ -26,7 +26,8 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </div>
       <input type="range" id="volSlider" min="0" max="600" value="100" />
       <div class="presets-row">
-        <button class="preset-btn" data-val="0">0</button>
+        <button class="preset-btn" data-val="50" title="Half Volume (50%)">9</button>
+        <button class="preset-btn" data-val="0" title="Mute (0%)">0</button>
         <button class="preset-btn" data-val="100">1</button>
         <button class="preset-btn" data-val="200">2</button>
         <button class="preset-btn" data-val="300">3</button>
@@ -95,6 +96,9 @@ document.addEventListener('keydown', (e) => {
     const val = key * 100;
     updateSliderUI(val);
     sendVolMessage(val / 100);
+  } else if (e.key === '9') {
+    updateSliderUI(50);
+    sendVolMessage(0.5);
   }
 });
 
