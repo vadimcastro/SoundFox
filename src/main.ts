@@ -131,6 +131,33 @@ btnNight.addEventListener('click', async () => {
   } catch(e) {}
 });
 
+// Initial Sync from Active Tab
+(async () => {
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      const state = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) {
+        updateSliderUI(state.volume * 100);
+        
+        if (state.eq === 'bass') {
+          btnBass.classList.add('active');
+          btnEq.classList.remove('active');
+        } else {
+          btnEq.classList.add('active');
+          btnBass.classList.remove('active');
+        }
+
+        nightModeActive = state.nightMode;
+        if (nightModeActive) btnNight.classList.add('active');
+        else btnNight.classList.remove('active');
+      }
+    }
+  } catch (e) {
+    console.warn("SoundFox: Could not sync state with active tab.");
+  }
+})();
+
 // Polling interval for dB Meter
 setInterval(async () => {
   try {

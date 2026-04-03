@@ -9,6 +9,10 @@ let compressorNode: DynamicsCompressorNode | null = null;
 let analyser: AnalyserNode | null = null;
 const mediaElements = new Set<HTMLMediaElement>();
 
+let currentVolume = 1;
+let currentEq = "flat";
+let currentNightMode = false;
+
 function initAudioContext() {
   if (!audioCtx) {
     audioCtx = new window.AudioContext();
@@ -89,6 +93,7 @@ browser.runtime.onMessage.addListener((message: any) => {
         gainNode.gain.setTargetAtTime(message.value, audioCtx.currentTime, 0.05);
         console.log(`SoundFox: Volume set to ${message.value * 100}%`);
       }
+      currentVolume = message.value;
     } else {
       console.warn("SoundFox: Cannot set volume, no media element initialized yet.");
     }
@@ -101,6 +106,7 @@ browser.runtime.onMessage.addListener((message: any) => {
         biquadFilter.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); // Flat
         console.log("SoundFox: Flat EQ enabled");
       }
+      currentEq = message.mode;
     }
   } else if (message.action === "setNightMode") {
     if (compressorNode && audioCtx) {
@@ -121,7 +127,14 @@ browser.runtime.onMessage.addListener((message: any) => {
         compressorNode.release.setTargetAtTime(0.05, audioCtx.currentTime, 0.1);
         console.log("SoundFox: Night Mode disabled");
       }
+      currentNightMode = message.active;
     }
+  } else if (message.action === "getState") {
+    return Promise.resolve({
+      volume: currentVolume,
+      eq: currentEq,
+      nightMode: currentNightMode
+    });
   } else if (message.action === "requestDb") {
     let db = -100;
     if (analyser) {
