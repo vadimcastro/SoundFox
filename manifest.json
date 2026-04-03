@@ -4,7 +4,17 @@
   "version": "1.0.0",
   "description": "Sound booster & master for your browser.",
   "action": {
-    "default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "speaker.svg",
+      "48": "speaker.svg",
+      "128": "speaker.svg"
+    }
+  },
+  "icons": {
+    "16": "speaker.svg",
+    "48": "speaker.svg",
+    "128": "speaker.svg"
   },
   "permissions": [
     "activeTab",
