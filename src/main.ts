@@ -108,43 +108,77 @@ const btnBass = document.getElementById('btnBass') as HTMLButtonElement;
 const btnDialog = document.getElementById('btnDialog') as HTMLButtonElement;
 const btnLevel = document.getElementById('btnLevel') as HTMLButtonElement;
 
+let dialogModeActive = false;
+let autoLevelActive = false;
+
+function updateDashboard(state: any) {
+  updateSliderUI(state.volume * 100);
+
+  btnEq.classList.toggle("active", state.eq === "flat");
+  btnBass.classList.toggle("active", state.eq === "bass");
+  btnDialog.classList.toggle("active", state.dialogMode);
+  btnLevel.classList.toggle("active", state.autoLevel);
+  dialogModeActive = state.dialogMode;
+  autoLevelActive = state.autoLevel;
+  
+  // Exclusivity logic: Override Bass DOM space
+  if (state.autoLevel) {
+    btnBass.innerHTML = `<span class="pulse-indicator"></span> Active AGC`;
+    btnBass.classList.add("disabled");
+  } else if (state.dialogMode) {
+    btnBass.innerHTML = `<span class="pulse-indicator" style="background-color: var(--dialog); box-shadow: 0 0 8px var(--dialog);"></span> Dialog Lock`;
+    btnBass.classList.add("disabled");
+  } else {
+    btnBass.innerHTML = `Bass`;
+    btnBass.classList.remove("disabled");
+  }
+}
+
 btnEq.addEventListener('click', async () => {
-  btnEq.classList.add('active');
-  btnBass.classList.remove('active');
+  if (btnDialog.classList.contains("active") || btnLevel.classList.contains("active")) return;
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "flat" });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "flat" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
   } catch(e) {}
 });
 
 btnBass.addEventListener('click', async () => {
-  btnBass.classList.add('active');
-  btnEq.classList.remove('active');
+  if (btnBass.classList.contains("disabled")) return;
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "bass" });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "bass" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
   } catch(e) {}
 });
 
-let dialogModeActive = false;
 btnDialog.addEventListener('click', async () => {
   dialogModeActive = !dialogModeActive;
-  if (dialogModeActive) btnDialog.classList.add('active');
-  else btnDialog.classList.remove('active');
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setDialogMode", active: dialogModeActive });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setDialogMode", active: dialogModeActive });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
   } catch(e) {}
 });
 
-let autoLevelActive = false;
 btnLevel.addEventListener('click', async () => {
   autoLevelActive = !autoLevelActive;
-  if (autoLevelActive) btnLevel.classList.add('active');
-  else btnLevel.classList.remove('active');
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) await browser.tabs.sendMessage(tabs[0].id, { action: "setAutoLevel", active: autoLevelActive });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setAutoLevel", active: autoLevelActive });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
   } catch(e) {}
 });
 
@@ -154,33 +188,7 @@ btnLevel.addEventListener('click', async () => {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs[0] && tabs[0].id) {
       const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
-      if (state) {
-        updateSliderUI(state.volume * 100);
-        
-        if (state.eq === 'bass') {
-          btnBass.classList.add('active');
-          btnEq.classList.remove('active');
-        } else {
-          btnEq.classList.add('active');
-          btnBass.classList.remove('active');
-        }
-
-        if (state.dialogMode) {
-          btnDialog.classList.add('active');
-          dialogModeActive = true;
-        } else {
-          btnDialog.classList.remove('active');
-          dialogModeActive = false;
-        }
-        
-        if (state.autoLevel) {
-          btnLevel.classList.add('active');
-          autoLevelActive = true;
-        } else {
-          btnLevel.classList.remove('active');
-          autoLevelActive = false;
-        }
-      }
+      if (state) updateDashboard(state);
     }
   } catch (e) {
     console.warn("SoundFox: Could not sync state with active tab.");

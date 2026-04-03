@@ -323,3 +323,27 @@ input[type=range]::-moz-range-thumb:hover {
   vertical-align: super;
   font-weight: 800;
 }
+
+.pulse-indicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: var(--level);
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--level);
+  animation: pulse-anim 1s infinite alternate;
+}
+
+@keyframes pulse-anim {
+  from { opacity: 0.4; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+.toggle-btn.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  filter: grayscale(0.5);
+  transition: all 0.3s ease;
+}

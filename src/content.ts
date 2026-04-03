@@ -115,37 +115,33 @@ function initAudioContext() {
   }
 }
 
+function bindMediaElement(el: HTMLMediaElement) {
+  if (mediaElements.has(el)) return;
+  initAudioContext();
+  if (audioCtx && biquadFilter) {
+    try {
+      const source = audioCtx.createMediaElementSource(el);
+      source.connect(biquadFilter);
+      mediaElements.add(el);
+      updateGraphRouting();
+      console.log("SoundFox: Secured actively playing media pipeline.");
+    } catch (e) {
+      // Failsafe for natively locked elements
+    }
+  }
+}
+
 function attachToMediaElements() {
   const elements = document.querySelectorAll<HTMLMediaElement>("video, audio");
   elements.forEach((el) => {
-    if (!mediaElements.has(el)) {
-      initAudioContext();
-      if (audioCtx && biquadFilter) {
-        try {
-          const source = audioCtx.createMediaElementSource(el);
-          const ghostSuppressor = audioCtx.createGain();
-          
-          const syncGhostTracker = () => {
-            // Prevent hidden SPA background tracker videos from overlapping streams and causing horrific phase-distortion
-            if (el.muted || el.volume === 0 || el.paused) {
-              ghostSuppressor.gain.value = 0;
-            } else {
-              ghostSuppressor.gain.value = 1;
-            }
-          };
-
-          el.addEventListener('volumechange', syncGhostTracker);
-          el.addEventListener('play', syncGhostTracker);
-          el.addEventListener('pause', syncGhostTracker);
-          syncGhostTracker();
-          
-          source.connect(ghostSuppressor);
-          ghostSuppressor.connect(biquadFilter);
-          
-          mediaElements.add(el);
-          console.log("SoundFox: Dedicated media pipeline successfully bridged.");
-        } catch (e) {}
-      }
+    // ONLY bind to actively playing elements!
+    // This effortlessly isolates YouTube's hidden preloader ghosts natively without DSP interval hacks.
+    if (!el.paused) {
+      bindMediaElement(el);
+    } else {
+      el.addEventListener('play', () => {
+        bindMediaElement(el);
+      }, { once: true });
     }
   });
 }
@@ -185,12 +181,24 @@ browser.runtime.onMessage.addListener((message: any) => {
     }
   } else if (message.action === "setDialogMode") {
     currentDialogMode = message.active;
+    if (currentDialogMode) {
+      currentAutoLevel = false;
+      currentEq = "flat";
+      if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
+      try { browser.storage.local.set({ eq: currentEq, autoLevel: currentAutoLevel }); } catch(e) {}
+    }
     try { browser.storage.local.set({ dialogMode: currentDialogMode }); } catch(e) {}
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
       updateGraphRouting();
     }
   } else if (message.action === "setAutoLevel") {
     currentAutoLevel = message.active;
+    if (currentAutoLevel) {
+      currentDialogMode = false;
+      currentEq = "flat";
+      if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
+      try { browser.storage.local.set({ eq: currentEq, dialogMode: currentDialogMode }); } catch(e) {}
+    }
     try { browser.storage.local.set({ autoLevel: currentAutoLevel }); } catch(e) {}
     if (levelerNode && biquadFilter && gainNode && audioCtx) {
       updateGraphRouting();
