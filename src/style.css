@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-  --bg-color: #0f172a;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --bg-color: #0c111d;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --primary: #8b5cf6;
   --secondary: #ec4899;
+  --night: #f97316;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
 }
@@ -13,7 +14,7 @@
 body {
   margin: 0;
   padding: 0;
-  width: 300px;
+  width: 320px;
   height: 380px;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
@@ -34,7 +35,7 @@ body::before {
   height: 200px;
   background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
   filter: blur(40px);
-  opacity: 0.5;
+  opacity: 0.4;
   animation: float 6s ease-in-out infinite alternate;
   z-index: 0;
 }
@@ -48,7 +49,7 @@ body::after {
   height: 250px;
   background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
   filter: blur(50px);
-  opacity: 0.4;
+  opacity: 0.3;
   animation: float 8s ease-in-out infinite alternate-reverse;
   z-index: 0;
 }
@@ -63,7 +64,7 @@ body::after {
   z-index: 10;
   width: 100%;
   height: 100%;
-  padding: 20px;
+  padding: 12px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -74,31 +75,31 @@ body::after {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 14px 16px;
   text-align: left;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  gap: 16px;
 }
 
 .header-row.compact {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .speaker-icon.mini {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.8));
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
 }
 
 h1.mini {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   margin: 0;
   background: linear-gradient(135deg, var(--text-main), var(--text-muted));
@@ -107,22 +108,23 @@ h1.mini {
   -webkit-text-fill-color: transparent;
   display: flex;
   align-items: baseline;
+  letter-spacing: -0.5px;
 }
 
 .version {
   font-size: 10px;
-  margin-left: 6px;
+  margin-left: 8px;
   color: var(--text-muted);
   -webkit-text-fill-color: var(--text-muted);
+  font-weight: 600;
 }
 
 /* Meter */
 .meter-container {
-  margin-bottom: 20px;
-  background: rgba(0,0,0,0.2);
+  background: rgba(0,0,0,0.3);
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.03);
 }
 
 .meter-label {
@@ -130,7 +132,7 @@ h1.mini {
   justify-content: space-between;
   font-size: 11px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   color: var(--text-muted);
 }
 
@@ -143,7 +145,7 @@ h1.mini {
 .meter-bar-bg {
   width: 100%;
   height: 6px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -155,11 +157,10 @@ h1.mini {
   transition: width 0.05s linear, background 0.2s ease;
 }
 
-
 /* Custom Slider */
 .slider-container {
-  margin-top: 4px;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .slider-label {
@@ -167,7 +168,7 @@ h1.mini {
   justify-content: space-between;
   font-size: 12px;
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 input[type=range] {
@@ -180,79 +181,89 @@ input[type=range] {
 
 input[type=range]::-webkit-slider-runnable-track {
   width: 100%;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 4px;
 }
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 16px;
-  width: 16px;
+  height: 20px;
+  width: 20px;
   border-radius: 50%;
   background: var(--primary);
-  margin-top: -5px;
+  margin-top: -6px;
   box-shadow: 0 0 10px var(--primary);
   cursor: pointer;
   transition: transform 0.2s;
 }
 
 input[type=range]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 .presets-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 16px;
 }
 
 .preset-btn {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: color 0.2s, background 0.2s;
+  padding: 8px 0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
   font-family: inherit;
   font-weight: 600;
+  text-align: center;
 }
 
 .preset-btn:hover {
   background: rgba(255,255,255,0.1);
   color: var(--text-main);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-1px);
 }
 
 .controls-grid {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: auto;
 }
 
 .toggle-btn.compact {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);
   color: var(--text-main);
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 10px 4px;
+  border-radius: 8px;
   font-family: inherit;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   flex: 1;
 }
 
 .toggle-btn:hover:not(.disabled) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-2px);
 }
 
 .toggle-btn.active {
   background: var(--primary);
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+}
+
+.toggle-btn.night-mode.active {
+  background: var(--night);
+  border-color: var(--night);
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
 }

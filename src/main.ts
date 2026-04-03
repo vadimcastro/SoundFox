@@ -38,7 +38,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div class="controls-grid">
       <button class="toggle-btn active compact" id="btnEq">Flat</button>
       <button class="toggle-btn compact" id="btnBass">Bass</button>
-      <button class="toggle-btn compact" id="btnNight" title="Compression to equal out loud bangs and quiet whispers">Night Mode</button>
+      <button class="toggle-btn compact night-mode" id="btnNight" title="Compression to equal out loud bangs and quiet whispers">Night</button>
     </div>
   </div>
 `
@@ -64,7 +64,12 @@ const sendVolMessage = async (gainValue: number) => {
 
 const updateSliderUI = (val: number) => {
   volSlider.value = val.toString();
-  volVal.innerText = `${val}%`;
+  volVal.innerText = val === 0 ? "MUTED" : `${val}%`;
+  if (val === 0) {
+    volVal.style.color = '#ef4444';
+  } else {
+    volVal.style.color = 'inherit';
+  }
 }
 
 volSlider.addEventListener('input', (e) => {
