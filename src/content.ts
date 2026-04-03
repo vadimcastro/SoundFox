@@ -120,16 +120,31 @@ function attachToMediaElements() {
   elements.forEach((el) => {
     if (!mediaElements.has(el)) {
       initAudioContext();
-      if (audioCtx && gainNode && biquadFilter) {
+      if (audioCtx && biquadFilter) {
         try {
           const source = audioCtx.createMediaElementSource(el);
-          source.connect(biquadFilter);
+          const ghostSuppressor = audioCtx.createGain();
+          
+          const syncGhostTracker = () => {
+            // Prevent hidden SPA background tracker videos from overlapping streams and causing horrific phase-distortion
+            if (el.muted || el.volume === 0 || el.paused) {
+              ghostSuppressor.gain.value = 0;
+            } else {
+              ghostSuppressor.gain.value = 1;
+            }
+          };
+
+          el.addEventListener('volumechange', syncGhostTracker);
+          el.addEventListener('play', syncGhostTracker);
+          el.addEventListener('pause', syncGhostTracker);
+          syncGhostTracker();
+          
+          source.connect(ghostSuppressor);
+          ghostSuppressor.connect(biquadFilter);
+          
           mediaElements.add(el);
-          console.log("SoundFox: Attached to media element", el);
-        } catch (e) {
-          // If the element is already bound to another context, it might throw here
-          console.error("SoundFox: Failed to attach AudioContext", e);
-        }
+          console.log("SoundFox: Dedicated media pipeline successfully bridged.");
+        } catch (e) {}
       }
     }
   });
