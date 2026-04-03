@@ -16,7 +16,7 @@ body {
   margin: 0;
   padding: 0;
   width: 320px;
-  height: 340px;
+  height: 380px;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
@@ -311,4 +311,15 @@ input[type=range]::-moz-range-thumb:hover {
   background: var(--level);
   border-color: var(--level);
   box-shadow: 0 4px 16px rgba(20, 184, 166, 0.4);
+}
+
+.beta-tag {
+  font-size: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: super;
+  font-weight: 800;
 }
