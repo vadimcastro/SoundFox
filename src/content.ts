@@ -7,7 +7,7 @@ let gainNode: GainNode | null = null;
 let biquadFilter: BiquadFilterNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
 let analyser: AnalyserNode | null = null;
-const mediaElements = new WeakSet<HTMLMediaElement>();
+const mediaElements = new Set<HTMLMediaElement>();
 
 function initAudioContext() {
   if (!audioCtx) {
@@ -70,9 +70,15 @@ observer.observe(document.body, { childList: true, subtree: true });
 browser.runtime.onMessage.addListener((message: any) => {
   if (message.action === "setVolume") {
     if (gainNode) {
-      // Apply linear gain: 1 = standard volume, 2 = 200% volume, etc.
-      gainNode.gain.value = message.value;
-      console.log(`SoundFox: Volume set to ${message.value * 100}%`);
+      if (message.value === 0) {
+        mediaElements.forEach(el => el.muted = true);
+        gainNode.gain.value = 0;
+        console.log("SoundFox: Fully Muted Output");
+      } else {
+        mediaElements.forEach(el => el.muted = false);
+        gainNode.gain.value = message.value;
+        console.log(`SoundFox: Volume set to ${message.value * 100}%`);
+      }
     } else {
       console.warn("SoundFox: Cannot set volume, no media element initialized yet.");
     }
