@@ -1,5 +1,8 @@
 # SoundFox Store Compliance & Publishing Justifications
 
+## Build Matrix Requirements
+When finalizing your active compilation, manually executing `npm run build` will actively generate **BOTH** the `dist/firefox` and `dist/chrome` bundles mechanically via NPM logic triggers. Because you are primarily debugging and targeting the Mozilla Add-ons marketplace locally, **you must prioritize loading explicitly from your unpacked `/dist/firefox/` directory!** VITE natively generates Mozilla-compliant `browser_specific_settings` and `gecko` validation IDs explicitly inside that bundle wrapper.
+
 ## Overarching Permissions Justification
 When submitting SoundFox to the Chrome Web Store or Firefox Add-ons marketplace, the automated review systems will flag the explicit `<all_urls>` host requirement in the `manifest.json`.
 

@@ -23,14 +23,43 @@ function updateBadge(volume: number) {
   }
 }
 
+async function updateBadgeForTab(tabId: number) {
+  try {
+    const tab = await browser.tabs.get(tabId);
+    if (!tab.url) return;
+    
+    const state: any = await browser.tabs.sendMessage(tabId, { action: "getState" });
+    if (state && state.volume !== undefined) {
+      updateBadge(state.volume as number);
+    }
+  } catch(e) {}
+}
+
 // Initial hydration upon background/service-worker boot sequence
-browser.storage.local.get("volume").then((data) => {
-  if (data.volume !== undefined) updateBadge(data.volume as number);
+browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+  if (tabs[0] && tabs[0].id) {
+    updateBadgeForTab(tabs[0].id);
+  }
 }).catch(() => {});
 
+browser.tabs.onActivated.addListener(({ tabId }) => {
+  updateBadgeForTab(tabId);
+});
+
+browser.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
+  if (tab.active && tab.url) {
+    updateBadgeForTab(tabId);
+  }
+});
+
 // Live hydration broadcast from Popup inputs across the DOM
-browser.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.volume && changes.volume.newValue !== undefined) {
-    updateBadge(changes.volume.newValue as number);
+browser.storage.onChanged.addListener(async (changes, area) => {
+  if (area === "local" && changes.settings) {
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0] && tabs[0].id) {
+        updateBadgeForTab(tabs[0].id);
+      }
+    } catch(e) {}
   }
 });

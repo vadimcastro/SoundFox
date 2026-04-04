@@ -5,7 +5,7 @@ const target = process.env.BROWSER_TARGET || "chrome";
 
 function generateManifest() {
   const manifest = readJsonFile("manifest.json");
-  
+
   // Transform manifest for Firefox Add-ons
   if (target === "firefox") {
     if (manifest.background && manifest.background.service_worker) {
@@ -15,12 +15,20 @@ function generateManifest() {
     // Firefox also sometimes requires browser_specific_settings for ID
     manifest.browser_specific_settings = {
       gecko: {
-        id: "soundfox@westen.dev",
-        strict_min_version: "109.0"
+        id: "soundfox@vadimcastro.github.io",
+        strict_min_version: "140.0",
+        data_collection_permissions: {
+          required: [
+            "none"
+          ]
+        }
+      },
+      gecko_android: {
+        strict_min_version: "142.0"
       }
     };
   }
-  
+
   return manifest;
 }
 

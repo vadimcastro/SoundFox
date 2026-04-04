@@ -34,6 +34,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Squashes loud peaks and bumps up quiet voices in intense media">Dialog</button>
       <button class="toggle-btn compact auto-level" id="btnLevel" title="Smoothly rides the volume fader across different episodes to prevent massive drops or jumps in overall scene volume">Level <span class="beta-tag">BETA</span></button>
     </div>
+    
+    <div class="scope-row">
+      <span class="memory-label">Memory Engine</span>
+      <button class="scope-btn active" id="btnScopeSite" title="Settings apply to all tabs on this website">Site</button>
+      <button class="scope-btn" id="btnScopeTab" title="Settings strictly apply to this single tab">Tab</button>
+    </div>
   </div>
 `
 
@@ -44,6 +50,10 @@ const sendVolMessage = async (gainValue: number) => {
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs[0] && tabs[0].id) {
+      if (tabs[0].url) {
+        const hostname = new URL(tabs[0].url).hostname;
+        console.log(`Setting volume for ${hostname} to ${gainValue}`);
+      }
       await browser.tabs.sendMessage(tabs[0].id, {
         action: "setVolume",
         value: gainValue
@@ -96,9 +106,12 @@ const btnEq = document.getElementById('btnEq') as HTMLButtonElement;
 const btnBass = document.getElementById('btnBass') as HTMLButtonElement;
 const btnDialog = document.getElementById('btnDialog') as HTMLButtonElement;
 const btnLevel = document.getElementById('btnLevel') as HTMLButtonElement;
+const btnScopeSite = document.getElementById('btnScopeSite') as HTMLButtonElement;
+const btnScopeTab = document.getElementById('btnScopeTab') as HTMLButtonElement;
 
 let dialogModeActive = false;
 let autoLevelActive = false;
+let memoryScope: "site" | "tab" = "site";
 
 function updateDashboard(state: any) {
   updateSliderUI(state.volume * 100);
@@ -109,6 +122,10 @@ function updateDashboard(state: any) {
   btnLevel.classList.toggle("active", state.autoLevel);
   dialogModeActive = state.dialogMode;
   autoLevelActive = state.autoLevel;
+  
+  memoryScope = state.memoryScope || "site";
+  btnScopeSite.classList.toggle("active", memoryScope === "site");
+  btnScopeTab.classList.toggle("active", memoryScope === "tab");
   
   // Exclusivity logic: Override Bass DOM space
   if (state.autoLevel && state.dialogMode) {
@@ -168,6 +185,30 @@ btnLevel.addEventListener('click', async () => {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs[0] && tabs[0].id) {
       await browser.tabs.sendMessage(tabs[0].id, { action: "setAutoLevel", active: autoLevelActive });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
+});
+
+btnScopeSite.addEventListener('click', async () => {
+  if (memoryScope === "site") return;
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setMemoryScope", scope: "site" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
+});
+
+btnScopeTab.addEventListener('click', async () => {
+  if (memoryScope === "tab") return;
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setMemoryScope", scope: "tab" });
       const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
       if (state) updateDashboard(state);
     }
