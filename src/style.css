@@ -16,7 +16,7 @@ body {
   margin: 0;
   padding: 0;
   width: 320px;
-  height: 380px;
+  height: 400px;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
