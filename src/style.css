@@ -67,7 +67,7 @@ body::after {
   width: 100%;
   min-height: 100vh;
   height: max-content;
-  padding: 14px;
+  padding: 4px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -79,7 +79,7 @@ body::after {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
   text-align: left;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   flex-grow: 1;
@@ -290,6 +290,9 @@ input[type=range]::-moz-range-thumb:hover {
   cursor: pointer;
   transition: all 0.3s ease;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toggle-btn:hover:not(.disabled) {
