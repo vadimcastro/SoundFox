@@ -7,7 +7,6 @@ let gainNode: GainNode | null = null;
 let biquadFilter: BiquadFilterNode | null = null;
 let compressorNode: DynamicsCompressorNode | null = null;
 let levelerNode: DynamicsCompressorNode | null = null;
-let analyser: AnalyserNode | null = null;
 const mediaElements = new Set<HTMLMediaElement>();
 
 let currentVolume = 1;
@@ -83,7 +82,6 @@ function initAudioContext() {
     biquadFilter = audioCtx.createBiquadFilter();
     compressorNode = audioCtx.createDynamicsCompressor();
     levelerNode = audioCtx.createDynamicsCompressor();
-    analyser = audioCtx.createAnalyser();
     
     // Lowshelf filter specifically hits lower frequency bands
     biquadFilter.type = "lowshelf";
@@ -104,14 +102,9 @@ function initAudioContext() {
     levelerNode.attack.value = 0.005; // Lightning fast 5ms transient crush absolutely protecting ears from blasts
     levelerNode.release.value = 1.0;
 
-    // Metric Analyser Setup
-    analyser.fftSize = 2048; // Better RMS resolution
-    analyser.smoothingTimeConstant = 0.5;
-
     // Default Node Topology (PROTOTYPE BASELINE: Bypasses Compressor Entirely)
     biquadFilter.connect(gainNode);
-    gainNode.connect(analyser); 
-    analyser.connect(audioCtx.destination);
+    gainNode.connect(audioCtx.destination); 
   }
 }
 
@@ -219,21 +212,5 @@ browser.runtime.onMessage.addListener((message: any) => {
       dialogMode: currentDialogMode,
       autoLevel: currentAutoLevel
     });
-  } else if (message.action === "requestDb") {
-    let db = -100;
-    if (analyser) {
-        const floatData = new Float32Array(analyser.fftSize);
-        analyser.getFloatTimeDomainData(floatData);
-        let sumSquared = 0;
-        for (let i = 0; i < floatData.length; i++) {
-          sumSquared += floatData[i] * floatData[i];
-        }
-        const rms = Math.sqrt(sumSquared / floatData.length);
-        if (rms > 0) {
-          db = 20 * Math.log10(rms);
-        }
-    }
-    // Content script listeners can return a Promise in MV3 via webextension-polyfill natively
-    return Promise.resolve({ db });
   }
 });

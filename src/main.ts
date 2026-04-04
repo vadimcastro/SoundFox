@@ -9,15 +9,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <span class="version">v1.2.0</span>
     </div>
 
-    <div class="meter-container">
-      <div class="meter-label">
-        <span>Master Output</span>
-        <span id="dbValue">-∞ dBFS</span>
-      </div>
-      <div class="meter-bar-bg">
-        <div class="meter-bar-fill" id="dbBar"></div>
-      </div>
-    </div>
 
     <div class="slider-container">
       <div class="slider-label">
@@ -48,8 +39,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 const volSlider = document.getElementById('volSlider') as HTMLInputElement;
 const volVal = document.getElementById('volVal') as HTMLSpanElement;
-const dbValue = document.getElementById('dbValue') as HTMLSpanElement;
-const dbBar = document.getElementById('dbBar') as HTMLDivElement;
 
 const sendVolMessage = async (gainValue: number) => {
   try {
@@ -198,30 +187,3 @@ btnLevel.addEventListener('click', async () => {
   }
 })();
 
-// Polling interval for dB Meter
-setInterval(async () => {
-  try {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tabs[0] && tabs[0].id) {
-      browser.tabs.sendMessage(tabs[0].id, { action: "requestDb" }).then((res: any) => {
-        if (res && res.db !== undefined) {
-          const db = res.db;
-          dbValue.innerText = `${db.toFixed(1)} dBFS`;
-          
-          // Map -60dB (silence) to 0dB (peak)
-          let width = ((db + 60) / 60) * 100;
-          width = Math.max(0, Math.min(100, width));
-          dbBar.style.width = `${width}%`;
-          
-          if (db > -3) { // Red zone close to digital peak 0 clipping
-            dbBar.style.background = '#ef4444'; 
-          } else if (db > -12) { // Yellow warning zone
-            dbBar.style.background = '#f59e0b'; 
-          } else {
-            dbBar.style.background = 'var(--primary)';
-          }
-        }
-      }).catch(() => {});
-    }
-  } catch(e) {}
-}, 50);
