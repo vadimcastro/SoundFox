@@ -16,7 +16,6 @@ body {
   margin: 0;
   padding: 0;
   width: 320px;
-  min-height: 390px;
   height: max-content;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
@@ -65,7 +64,6 @@ body::after {
   position: relative;
   z-index: 10;
   width: 100%;
-  min-height: 100vh;
   height: max-content;
   padding: 4px;
   box-sizing: border-box;
