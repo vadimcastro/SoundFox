@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "SoundFox",
+  "version": "1.2.0",
+  "description": "Sound booster & master for your browser.",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "speaker.svg",
+      "48": "speaker.svg",
+      "128": "speaker.svg"
+    }
+  },
+  "icons": {
+    "16": "speaker.svg",
+    "48": "speaker.svg",
+    "128": "speaker.svg"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabCapture",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "js": ["src/content.ts"]
+    }
+  ]
+}
