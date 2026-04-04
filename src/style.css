@@ -16,15 +16,12 @@ body {
   margin: 0;
   padding: 0;
   width: 320px;
-  height: max-content;
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
   position: relative;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body::before {
@@ -64,8 +61,7 @@ body::after {
   position: relative;
   z-index: 10;
   width: 100%;
-  height: max-content;
-  padding: 4px;
+  padding: 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -116,7 +112,7 @@ h1.mini {
 }
 
 .version {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
   -webkit-text-fill-color: var(--text-muted);
   font-weight: 600;
@@ -135,7 +131,7 @@ h1.mini {
 .slider-label {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 16px;
 }
@@ -211,7 +207,7 @@ input[type=range]::-moz-range-thumb:hover {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   padding: 8px 0;
   border-radius: 6px;
@@ -244,7 +240,7 @@ input[type=range]::-moz-range-thumb:hover {
   border-radius: 8px;
   font-family: inherit;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
   flex: 1;
@@ -277,7 +273,7 @@ input[type=range]::-moz-range-thumb:hover {
 }
 
 .beta-tag {
-  font-size: 8px;
+  font-size: 10px;
   background: rgba(255, 255, 255, 0.15);
   color: var(--text-main);
   padding: 2px 4px;
@@ -309,4 +305,47 @@ input[type=range]::-moz-range-thumb:hover {
   opacity: 0.5;
   filter: grayscale(0.5);
   transition: all 0.3s ease;
+}
+
+.scope-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.memory-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-right: auto;
+  letter-spacing: 0.5px;
+}
+
+.scope-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scope-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.scope-btn.active {
+  background: rgba(157, 78, 221, 0.15);
+  border-color: rgba(157, 78, 221, 0.3);
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(157, 78, 221, 0.5);
 }

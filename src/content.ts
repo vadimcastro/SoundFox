@@ -13,14 +13,55 @@ let currentVolume = 1;
 let currentEq = "flat";
 let currentDialogMode = false;
 let currentAutoLevel = false;
+let currentMemoryScope: "site" | "tab" = "site";
+
+// Save helper for domain-specific settings
+async function saveSettings() {
+  if (currentMemoryScope === "tab") {
+    sessionStorage.setItem("soundfox_tab_state", JSON.stringify({
+      volume: currentVolume,
+      eq: currentEq,
+      dialogMode: currentDialogMode,
+      autoLevel: currentAutoLevel
+    }));
+    return;
+  }
+
+  const hostname = window.location.hostname;
+  try {
+    const data = await browser.storage.local.get("settings");
+    const settings: Record<string, any> = data.settings || {};
+    settings[hostname] = {
+      volume: currentVolume,
+      eq: currentEq,
+      dialogMode: currentDialogMode,
+      autoLevel: currentAutoLevel
+    };
+    await browser.storage.local.set({ settings });
+  } catch (e) {}
+}
 
 // Async init variables from storage to ensure state persists across video/episode reloads
 try {
-  browser.storage.local.get(["volume", "eq", "dialogMode", "autoLevel"]).then((data) => {
-    if (data.volume !== undefined) currentVolume = data.volume as number;
-    if (data.eq !== undefined) currentEq = data.eq as string;
-    if (data.dialogMode !== undefined) currentDialogMode = data.dialogMode as boolean;
-    if (data.autoLevel !== undefined) currentAutoLevel = data.autoLevel as boolean;
+  browser.storage.local.get(["settings", "memoryScope"]).then((data) => {
+    currentMemoryScope = (data.memoryScope as "site" | "tab") || "site";
+    
+    let hostSettings: any = {};
+    if (currentMemoryScope === "tab") {
+      const tabData = sessionStorage.getItem("soundfox_tab_state");
+      if (tabData) {
+        try { hostSettings = JSON.parse(tabData); } catch(e){}
+      }
+    } else {
+      const hostname = window.location.hostname;
+      const settings: Record<string, any> = data.settings || {};
+      hostSettings = settings[hostname] || {};
+    }
+
+    if (hostSettings.volume !== undefined) currentVolume = hostSettings.volume as number;
+    if (hostSettings.eq !== undefined) currentEq = hostSettings.eq as string;
+    if (hostSettings.dialogMode !== undefined) currentDialogMode = hostSettings.dialogMode as boolean;
+    if (hostSettings.autoLevel !== undefined) currentAutoLevel = hostSettings.autoLevel as boolean;
     
     if (audioCtx) {
       if (gainNode) gainNode.gain.value = currentVolume;
@@ -32,21 +73,36 @@ try {
 
 // Multi-DOM Synchronizer: Pipes updates from root frame to embedded <iframe> video containers
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === "local") {
-    if (changes.volume && changes.volume.newValue !== undefined) {
-      currentVolume = changes.volume.newValue as number;
+  if (area === "local" && changes.memoryScope && changes.memoryScope.newValue !== undefined) {
+    currentMemoryScope = changes.memoryScope.newValue as "site" | "tab";
+  }
+
+  if (currentMemoryScope === "tab") return; // Tab scopes natively do not synchronize backwards globally!
+
+  if (area === "local" && changes.settings && changes.settings.newValue) {
+    const hostname = window.location.hostname;
+    const newSettings = changes.settings.newValue as Record<string, any>;
+    const oldSettings = (changes.settings.oldValue as Record<string, any> | undefined) || {};
+    
+    const hostSettings = newSettings[hostname];
+    const oldHostSettings = oldSettings[hostname] || {};
+    
+    if (!hostSettings) return;
+
+    if (hostSettings.volume !== undefined && hostSettings.volume !== oldHostSettings.volume) {
+      currentVolume = hostSettings.volume as number;
       if (gainNode) gainNode.gain.value = currentVolume;
     }
-    if (changes.eq && changes.eq.newValue !== undefined) {
-      currentEq = changes.eq.newValue as string;
+    if (hostSettings.eq !== undefined && hostSettings.eq !== oldHostSettings.eq) {
+      currentEq = hostSettings.eq as string;
       if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
     }
-    if (changes.dialogMode && changes.dialogMode.newValue !== undefined) {
-      currentDialogMode = changes.dialogMode.newValue as boolean;
+    if (hostSettings.dialogMode !== undefined && hostSettings.dialogMode !== oldHostSettings.dialogMode) {
+      currentDialogMode = hostSettings.dialogMode as boolean;
       updateGraphRouting();
     }
-    if (changes.autoLevel && changes.autoLevel.newValue !== undefined) {
-      currentAutoLevel = changes.autoLevel.newValue as boolean;
+    if (hostSettings.autoLevel !== undefined && hostSettings.autoLevel !== oldHostSettings.autoLevel) {
+      currentAutoLevel = hostSettings.autoLevel as boolean;
       updateGraphRouting();
     }
   }
@@ -167,7 +223,7 @@ browser.runtime.onMessage.addListener((message: any) => {
 
   if (message.action === "setVolume") {
     currentVolume = message.value;
-    try { browser.storage.local.set({ volume: currentVolume }); } catch(e) {}
+    saveSettings();
     if (gainNode && audioCtx) {
       if (message.value === 0) {
         mediaElements.forEach(el => el.muted = true);
@@ -179,7 +235,7 @@ browser.runtime.onMessage.addListener((message: any) => {
     }
   } else if (message.action === "setEq") {
     currentEq = message.mode;
-    try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
+    saveSettings();
     if (biquadFilter && audioCtx) {
       biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
     }
@@ -188,9 +244,8 @@ browser.runtime.onMessage.addListener((message: any) => {
     if (currentDialogMode) {
       currentEq = "flat";
       if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
-      try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
     }
-    try { browser.storage.local.set({ dialogMode: currentDialogMode }); } catch(e) {}
+    saveSettings();
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
       updateGraphRouting();
     }
@@ -199,18 +254,22 @@ browser.runtime.onMessage.addListener((message: any) => {
     if (currentAutoLevel) {
       currentEq = "flat";
       if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
-      try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
     }
-    try { browser.storage.local.set({ autoLevel: currentAutoLevel }); } catch(e) {}
+    saveSettings();
     if (levelerNode && biquadFilter && gainNode && audioCtx) {
       updateGraphRouting();
     }
+  } else if (message.action === "setMemoryScope") {
+    currentMemoryScope = message.scope;
+    try { browser.storage.local.set({ memoryScope: currentMemoryScope }); } catch(e) {}
+    saveSettings();
   } else if (message.action === "getState") {
     return Promise.resolve({
       volume: currentVolume,
       eq: currentEq,
       dialogMode: currentDialogMode,
-      autoLevel: currentAutoLevel
+      autoLevel: currentAutoLevel,
+      memoryScope: currentMemoryScope
     });
   }
 });
