@@ -122,7 +122,10 @@ function updateDashboard(state: any) {
   autoLevelActive = state.autoLevel;
   
   // Exclusivity logic: Override Bass DOM space
-  if (state.autoLevel) {
+  if (state.autoLevel && state.dialogMode) {
+    btnBass.innerHTML = `<span class="pulse-indicator"></span><span class="pulse-indicator" style="background-color: var(--dialog); box-shadow: 0 0 8px var(--dialog);"></span> Dynamics Active`;
+    btnBass.classList.add("disabled");
+  } else if (state.autoLevel) {
     btnBass.innerHTML = `<span class="pulse-indicator"></span> Active AGC`;
     btnBass.classList.add("disabled");
   } else if (state.dialogMode) {

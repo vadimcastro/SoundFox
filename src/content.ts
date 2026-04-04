@@ -101,7 +101,7 @@ function initAudioContext() {
     levelerNode.threshold.value = -35;
     levelerNode.knee.value = 25;
     levelerNode.ratio.value = 4;
-    levelerNode.attack.value = 0.5;
+    levelerNode.attack.value = 0.005; // Lightning fast 5ms transient crush absolutely protecting ears from blasts
     levelerNode.release.value = 1.0;
 
     // Metric Analyser Setup
@@ -123,7 +123,18 @@ function bindMediaElement(el: HTMLMediaElement) {
       const source = audioCtx.createMediaElementSource(el);
       source.connect(biquadFilter);
       mediaElements.add(el);
+      
+      if (gainNode) gainNode.gain.value = currentVolume;
+      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
       updateGraphRouting();
+      
+      // Bind seamlessly to SPA episode jumps to explicitly map variables
+      el.addEventListener('loadeddata', () => {
+        if (gainNode) gainNode.gain.value = currentVolume;
+        if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+        updateGraphRouting();
+      });
+      
       console.log("SoundFox: Secured actively playing media pipeline.");
     } catch (e) {
       // Failsafe for natively locked elements
@@ -182,10 +193,9 @@ browser.runtime.onMessage.addListener((message: any) => {
   } else if (message.action === "setDialogMode") {
     currentDialogMode = message.active;
     if (currentDialogMode) {
-      currentAutoLevel = false;
       currentEq = "flat";
       if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
-      try { browser.storage.local.set({ eq: currentEq, autoLevel: currentAutoLevel }); } catch(e) {}
+      try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
     }
     try { browser.storage.local.set({ dialogMode: currentDialogMode }); } catch(e) {}
     if (compressorNode && biquadFilter && gainNode && audioCtx) {
@@ -194,10 +204,9 @@ browser.runtime.onMessage.addListener((message: any) => {
   } else if (message.action === "setAutoLevel") {
     currentAutoLevel = message.active;
     if (currentAutoLevel) {
-      currentDialogMode = false;
       currentEq = "flat";
       if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
-      try { browser.storage.local.set({ eq: currentEq, dialogMode: currentDialogMode }); } catch(e) {}
+      try { browser.storage.local.set({ eq: currentEq }); } catch(e) {}
     }
     try { browser.storage.local.set({ autoLevel: currentAutoLevel }); } catch(e) {}
     if (levelerNode && biquadFilter && gainNode && audioCtx) {
