@@ -3,12 +3,14 @@
 ## Goal
 Ship a major architecture upgrade centered on richer EQ controls and cleaner extension-level command handling, while preserving cross-browser behavior.
 
-## Current Baseline (v1.3.5)
+## Current Baseline (v1.4.0)
 Already implemented:
-- Per-site settings storage model (`settings[hostname]`)
+- Per-site settings storage model (`settings[siteKey]` with hostname/origin fallback)
 - Per-tab temporary scope (`sessionStorage`)
 - Flat/Bass EQ, Dialog mode, Auto-Level mode
 - Popup + content-script message flow
+- Extension command-based preset shortcuts
+- CI typecheck gate (`tsc --noEmit`)
 
 This means v2 should focus on true major capability expansion, not re-implementing the current baseline.
 
@@ -49,5 +51,5 @@ Example shape:
 5. Add regression checks for state persistence and command routing.
 
 ## Versioning Recommendation
-- Use `v1.4.x` for incremental hardening (CI/typecheck/commands migration if done with minimal UI scope).
+- `v1.4.0` is the hardening release for commands migration, CI typecheck, and persistence robustness.
 - Reserve `v2.0.0` for release containing full 5-band EQ plus storage/messaging schema changes.

@@ -24,6 +24,7 @@ For Mozilla review testing, load the unpacked extension from `dist/firefox`.
 
 2. Run local validation:
 ```bash
+npm run typecheck
 npm run build
 ```
 
