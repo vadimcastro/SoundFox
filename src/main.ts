@@ -29,7 +29,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     </div>
 
     <div class="controls-grid">
-      <button class="toggle-btn active compact" id="btnEq" title="Standard uncolored audio output">Flat</button>
+      <button class="toggle-btn active compact" id="btnEq" title="Balanced audio profile with no bass boost">Balanced</button>
       <button class="toggle-btn compact" id="btnBass" title="Applies a +15dB filter to amplify tracking bass frequencies">Bass</button>
       <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Voice clarity mode. Can run with Level. Bass is disabled while either mode is active.">Dialog</button>
       <button class="toggle-btn compact auto-level" id="btnLevel" title="Loudness smoothing mode. Can run with Dialog. Bass is disabled while either mode is active.">Level <span class="beta-tag">BETA</span></button>
