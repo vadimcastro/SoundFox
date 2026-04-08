@@ -11,11 +11,12 @@ Ship a major architecture upgrade centered on richer EQ controls and cleaner ext
 - Makes work parallelizable and trackable: task-to-issue conversion with acceptance criteria supports faster execution and clearer ownership.
 - Positions the project for a clean `2.0.0` launch instead of incremental feature drift.
 
-## Current Baseline (v1.4.0)
+## Current Baseline (v1.5.0)
 Already implemented:
 - Per-site settings storage model (`settings[siteKey]` with hostname/origin fallback)
 - Per-tab temporary scope (`sessionStorage`)
 - Flat/Bass EQ, Dialog mode, Auto-Level mode
+- Optional collapsible Advanced 5-band EQ controls in popup
 - Popup + content-script message flow
 - Extension command-based preset shortcuts
 - CI typecheck gate (`tsc --noEmit`)
@@ -73,5 +74,5 @@ This means v2 should focus on true major capability expansion, not re-implementi
 - Before implementation starts, convert each section above into GitHub issues with: clear title, acceptance criteria, dependencies, estimate, and owner.
 
 ## Versioning Recommendation
-- `v1.4.0` is the hardening release for commands migration, CI typecheck, and persistence robustness.
+- `v1.5.0` is the hardening + UX bridge release while v2 architecture work continues.
 - Reserve `v2.0.0` for release containing full 5-band EQ plus storage/messaging schema changes.
