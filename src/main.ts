@@ -4,7 +4,7 @@ import browser from "webextension-polyfill";
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="glass-panel">
     <div class="header-row compact">
-      <img src="speaker.svg" alt="Icon" class="speaker-icon mini" />
+      <img src="soundfox.png" alt="Icon" class="speaker-icon mini" />
       <h1 class="mini">SoundFox</h1>
       <span class="version">v1.3.0</span>
     </div>

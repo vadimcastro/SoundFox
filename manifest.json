@@ -20,15 +20,15 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "speaker.svg",
-      "48": "speaker.svg",
-      "128": "speaker.svg"
+      "16": "soundfox.png",
+      "48": "soundfox.png",
+      "128": "soundfox.png"
     }
   },
   "icons": {
-    "16": "speaker.svg",
-    "48": "speaker.svg",
-    "128": "speaker.svg"
+    "16": "soundfox.png",
+    "48": "soundfox.png",
+    "128": "soundfox.png"
   },
   "permissions": [
     "activeTab",
