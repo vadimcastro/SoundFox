@@ -51,8 +51,12 @@ const sendVolMessage = async (gainValue: number) => {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     if (tabs[0] && tabs[0].id) {
       if (tabs[0].url) {
-        const hostname = new URL(tabs[0].url).hostname;
-        console.log(`Setting volume for ${hostname} to ${gainValue}`);
+        try {
+          const hostname = new URL(tabs[0].url).hostname;
+          if (hostname) {
+            console.log(`Setting volume for ${hostname} to ${gainValue}`);
+          }
+        } catch (e) {}
       }
       await browser.tabs.sendMessage(tabs[0].id, {
         action: "setVolume",

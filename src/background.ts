@@ -38,7 +38,7 @@ async function setActiveTabVolume(volume: number) {
   try {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     const activeTab = tabs[0];
-    if (!activeTab?.id || !activeTab.url) return;
+    if (!activeTab?.id) return;
 
     await browser.tabs.sendMessage(activeTab.id, {
       action: "setVolume",
