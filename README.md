@@ -9,7 +9,7 @@ SoundFox is a local-first browser extension that stabilizes and boosts streaming
 - `Dialog` mode for voice clarity
 - `Level` mode for loudness smoothing across scenes/episodes
 - Per-site and per-tab memory scope
-- Popup controls + preset shortcuts (`0-6`, plus `9` for `50%`)
+- Popup controls + extension command presets (`Ctrl+Shift+0..6`, plus `Ctrl+Shift+9` for `50%`)
 
 ## Tech Stack
 - Vite + TypeScript

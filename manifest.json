@@ -30,6 +30,56 @@
     "48": "soundfox.png",
     "128": "soundfox.png"
   },
+  "commands": {
+    "preset-0": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+0"
+      },
+      "description": "Set volume to 0% (mute)"
+    },
+    "preset-50": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+9"
+      },
+      "description": "Set volume to 50%"
+    },
+    "preset-100": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+1"
+      },
+      "description": "Set volume to 100%"
+    },
+    "preset-200": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+2"
+      },
+      "description": "Set volume to 200%"
+    },
+    "preset-300": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+3"
+      },
+      "description": "Set volume to 300%"
+    },
+    "preset-400": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+4"
+      },
+      "description": "Set volume to 400%"
+    },
+    "preset-500": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+5"
+      },
+      "description": "Set volume to 500%"
+    },
+    "preset-600": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+6"
+      },
+      "description": "Set volume to 600%"
+    }
+  },
   "permissions": [
     "activeTab",
     "scripting",

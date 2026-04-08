@@ -17,14 +17,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </div>
       <input type="range" id="volSlider" min="0" max="600" value="100" />
       <div class="presets-row">
-        <button class="preset-btn" data-val="0" title="Mute [Shortcut: 0]">0</button>
-        <button class="preset-btn" data-val="50" title="50% Volume [Shortcut: 9]">1/2</button>
-        <button class="preset-btn" data-val="100" title="100% Volume [Shortcut: 1]">1</button>
-        <button class="preset-btn" data-val="200" title="200% Volume [Shortcut: 2]">2</button>
-        <button class="preset-btn" data-val="300" title="300% Volume [Shortcut: 3]">3</button>
-        <button class="preset-btn" data-val="400" title="400% Volume [Shortcut: 4]">4</button>
-        <button class="preset-btn" data-val="500" title="500% Volume [Shortcut: 5]">5</button>
-        <button class="preset-btn" data-val="600" title="600% Volume [Shortcut: 6]">6</button>
+        <button class="preset-btn" data-val="0" title="Mute">0</button>
+        <button class="preset-btn" data-val="50" title="50% Volume">1/2</button>
+        <button class="preset-btn" data-val="100" title="100% Volume">1</button>
+        <button class="preset-btn" data-val="200" title="200% Volume">2</button>
+        <button class="preset-btn" data-val="300" title="300% Volume">3</button>
+        <button class="preset-btn" data-val="400" title="400% Volume">4</button>
+        <button class="preset-btn" data-val="500" title="500% Volume">5</button>
+        <button class="preset-btn" data-val="600" title="600% Volume">6</button>
       </div>
     </div>
 
@@ -80,7 +80,7 @@ volSlider.addEventListener('input', (e) => {
   sendVolMessage(val / 100);
 });
 
-// Configure 0-6 Presets & Keyboard listeners
+// Configure 0-6 Presets
 const presetBtns = document.querySelectorAll('.preset-btn');
 presetBtns.forEach(btn => {
   btn.addEventListener('click', (e) => {
@@ -88,18 +88,6 @@ presetBtns.forEach(btn => {
     updateSliderUI(val);
     sendVolMessage(val / 100);
   });
-});
-
-document.addEventListener('keydown', (e) => {
-  const key = parseInt(e.key);
-  if (key >= 0 && key <= 6) {
-    const val = key * 100;
-    updateSliderUI(val);
-    sendVolMessage(val / 100);
-  } else if (e.key === '9') {
-    updateSliderUI(50);
-    sendVolMessage(0.5);
-  }
 });
 
 const btnEq = document.getElementById('btnEq') as HTMLButtonElement;
