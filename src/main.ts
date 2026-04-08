@@ -1,7 +1,7 @@
 import './style.css'
 import browser from "webextension-polyfill";
-import type { PopupToContentMessage, SoundFoxStateV2 } from "./messages";
-import type { EqBandsTuple, MemoryScope } from "./settings";
+
+type EqBandsTuple = [number, number, number, number, number];
 
 const EQ_BAND_LABELS = ["60Hz", "300Hz", "1k", "3k", "12k"] as const;
 const EQ_PRESET_BALANCED: EqBandsTuple = [0, 0, 0, 0, 0];
@@ -42,12 +42,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <button class="toggle-btn compact auto-level" id="btnLevel" title="Loudness smoothing mode. Can run with Dialog. Bass is disabled while either mode is active.">Level <span class="beta-tag">BETA</span></button>
     </div>
 
-    <details class="eq-panel" id="advancedEqPanel">
-      <summary class="eq-summary-row">
-        <span>Advanced 5-Band EQ</span>
+    <div class="eq-panel">
+      <div class="slider-label">
+        <span>5-Band EQ</span>
         <span id="eqSummary">Balanced</span>
-      </summary>
-      <div class="helper-caption">Use this for headphone/speaker-specific tuning. Balanced/Bass buttons remain the quick everyday modes.</div>
+      </div>
       <div class="eq-sliders">
         ${EQ_BAND_LABELS.map((label, idx) => `
           <div class="eq-band-row">
@@ -63,7 +62,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <button class="preset-btn eq-preset-btn" data-preset="dialog">Dialog Focus</button>
         <button class="preset-btn eq-preset-btn" data-preset="reset">Reset</button>
       </div>
-    </details>
+    </div>
     <div class="helper-caption">Dialog and Level can run together for combined dynamics control.</div>
     
     <div class="scope-row">
@@ -160,18 +159,8 @@ const btnScopeTab = document.getElementById('btnScopeTab') as HTMLButtonElement;
 
 let dialogModeActive = false;
 let autoLevelActive = false;
-let memoryScope: MemoryScope = "site";
+let memoryScope: "site" | "tab" = "site";
 let currentEqBands: EqBandsTuple = [...EQ_PRESET_BALANCED];
-
-const sendToActiveTab = async <T = void>(message: PopupToContentMessage): Promise<T | undefined> => {
-  try {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    if (!tabs[0]?.id) return;
-    return await browser.tabs.sendMessage(tabs[0].id, message) as T;
-  } catch (e) {
-    return;
-  }
-};
 
 const areBandsEqual = (a: EqBandsTuple, b: readonly number[]) => a.every((v, i) => v === b[i]);
 
@@ -207,29 +196,20 @@ const updateEqUI = (bands: EqBandsTuple) => {
 };
 
 const sendEqBandsMessage = async (bands: EqBandsTuple) => {
-  await sendToActiveTab({ action: "setEqBands", bands });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEqBands", bands });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch (e) {}
 };
 
-function coerceState(value: unknown): SoundFoxStateV2 | null {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Partial<SoundFoxStateV2>;
-  if (typeof raw.volume !== "number") return null;
-
-  return {
-    volume: raw.volume,
-    eq: raw.eq === "bass" ? "bass" : "flat",
-    eqBands: coerceEqBands(raw.eqBands),
-    dialogMode: Boolean(raw.dialogMode),
-    autoLevel: Boolean(raw.autoLevel),
-    memoryScope: raw.memoryScope === "tab" ? "tab" : "site"
-  };
-}
-
-function updateDashboard(state: SoundFoxStateV2) {
+function updateDashboard(state: any) {
   updateSliderUI(state.volume * 100);
-  updateEqUI(state.eqBands);
+  const bands = coerceEqBands(state.eqBands);
+  updateEqUI(bands);
 
   const isBassCurve = areBandsEqual(currentEqBands, EQ_PRESET_BASS);
   btnEq.classList.toggle("active", state.eq === "flat" && !isBassCurve);
@@ -239,7 +219,7 @@ function updateDashboard(state: SoundFoxStateV2) {
   dialogModeActive = state.dialogMode;
   autoLevelActive = state.autoLevel;
   
-  memoryScope = state.memoryScope;
+  memoryScope = state.memoryScope || "site";
   btnScopeSite.classList.toggle("active", memoryScope === "site");
   btnScopeTab.classList.toggle("active", memoryScope === "tab");
   
@@ -261,44 +241,74 @@ function updateDashboard(state: SoundFoxStateV2) {
 
 btnEq.addEventListener('click', async () => {
   if (btnDialog.classList.contains("active") || btnLevel.classList.contains("active")) return;
-  await sendToActiveTab({ action: "setEq", mode: "flat" });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "flat" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 btnBass.addEventListener('click', async () => {
   if (btnBass.classList.contains("disabled")) return;
-  await sendToActiveTab({ action: "setEq", mode: "bass" });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEq", mode: "bass" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 btnDialog.addEventListener('click', async () => {
   dialogModeActive = !dialogModeActive;
-  await sendToActiveTab({ action: "setDialogMode", active: dialogModeActive });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setDialogMode", active: dialogModeActive });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 btnLevel.addEventListener('click', async () => {
   autoLevelActive = !autoLevelActive;
-  await sendToActiveTab({ action: "setAutoLevel", active: autoLevelActive });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setAutoLevel", active: autoLevelActive });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 btnScopeSite.addEventListener('click', async () => {
   if (memoryScope === "site") return;
-  await sendToActiveTab({ action: "setMemoryScope", scope: "site" });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setMemoryScope", scope: "site" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 btnScopeTab.addEventListener('click', async () => {
   if (memoryScope === "tab") return;
-  await sendToActiveTab({ action: "setMemoryScope", scope: "tab" });
-  const state = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-  if (state) updateDashboard(state);
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setMemoryScope", scope: "tab" });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch(e) {}
 });
 
 eqBandInputs.forEach((input, idx) => {
@@ -338,9 +348,11 @@ eqPresetBtns.forEach((btn) => {
 // Initial Sync from Active Tab
 (async () => {
   try {
-    const rawState = await sendToActiveTab<SoundFoxStateV2>({ action: "getState" });
-    const state = coerceState(rawState);
-    if (state) updateDashboard(state);
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
   } catch (e) {
     console.warn("SoundFox: Could not sync state with active tab.");
   }
