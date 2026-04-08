@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
     "build": "npm run build:firefox && npm run build:chrome",
     "build:chrome": "BROWSER_TARGET=chrome vite build",
     "build:firefox": "BROWSER_TARGET=firefox vite build",
