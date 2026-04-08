@@ -3,6 +3,14 @@
 ## Goal
 Ship a major architecture upgrade centered on richer EQ controls and cleaner extension-level command handling, while preserving cross-browser behavior.
 
+## Why v2.0 Matters
+- Delivers meaningful user-facing audio control: a real 5-band EQ moves SoundFox from simple boosting to tunable sound shaping.
+- Reduces support risk during upgrades: explicit schema versioning and migrations prevent user state loss and inconsistent behavior.
+- Improves reliability on real browsing surfaces: stronger host matching and URL edge-case handling make settings more predictable across tabs, subdomains, and special pages.
+- Creates a safer evolution path: typed messaging and validation lower regression risk as features grow.
+- Makes work parallelizable and trackable: task-to-issue conversion with acceptance criteria supports faster execution and clearer ownership.
+- Positions the project for a clean `2.0.0` launch instead of incremental feature drift.
+
 ## Current Baseline (v1.4.0)
 Already implemented:
 - Per-site settings storage model (`settings[siteKey]` with hostname/origin fallback)
