@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SoundFox",
-  "version": "1.3.4",
+  "version": "1.4.0",
   "description": "Sound booster & master for your browser.",
   "browser_specific_settings": {
     "gecko": {
@@ -20,20 +20,69 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "speaker.svg",
-      "48": "speaker.svg",
-      "128": "speaker.svg"
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
     }
   },
   "icons": {
-    "16": "speaker.svg",
-    "48": "speaker.svg",
-    "128": "speaker.svg"
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "commands": {
+    "preset-0": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+0"
+      },
+      "description": "Set volume to 0% (mute)"
+    },
+    "preset-50": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+9"
+      },
+      "description": "Set volume to 50%"
+    },
+    "preset-100": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+1"
+      },
+      "description": "Set volume to 100%"
+    },
+    "preset-200": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+2"
+      },
+      "description": "Set volume to 200%"
+    },
+    "preset-300": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+3"
+      },
+      "description": "Set volume to 300%"
+    },
+    "preset-400": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+4"
+      },
+      "description": "Set volume to 400%"
+    },
+    "preset-500": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+5"
+      },
+      "description": "Set volume to 500%"
+    },
+    "preset-600": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+6"
+      },
+      "description": "Set volume to 600%"
+    }
   },
   "permissions": [
     "activeTab",
     "scripting",
-    "tabCapture",
     "tabs",
     "storage"
   ],

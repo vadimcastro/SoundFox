@@ -1,29 +1,51 @@
-# SoundFox 🦊
-**Release: v1.3.0**
+# SoundFox
+**Release: v1.4.0**
 
-A powerful, entirely local, hardware-accelerated WebAudio extension that elegantly resolves streaming audio discrepancies (quiet dialogue, deafening action scenes, and massive disparities between episodes or streaming platforms).
+SoundFox is a local-first browser extension that stabilizes and boosts streaming audio with a lightweight WebAudio pipeline.
 
-## Core Features
-*   **Master Volume Override:** Smoothly boost native HTML5 streaming media globally up to 600% beyond hardware maximums.
-*   **Auto-Level Node:** Implements a broadcast-grade 5ms C++ `DynamicsCompressorNode` explicitly tied to SPA node swaps natively to flawlessly normalize audio jumps across multi-episode binges (e.g., loud HBO intros) inherently within `<300ms`.
-*   **Dialog Component:** Smoothly crushes harsh digital micro-transients while applying precise makeup gain, making muddy dialogue crystal clear dynamically.
-*   **Zero-CPU Footprint:** Operates independently of JavaScript interval math, rendering fully locally inside the browser's C++ hardware threads to completely eliminate background battery throttling.
-*   **Preset Shortcuts:** Utilize `0-6` keyboard triggers bound seamlessly across native DOM environments via the overlay menu.
+## What It Does Today
+- Volume boost from `0%` to `600%`
+- EQ toggle: `Balanced` or `Bass`
+- `Dialog` mode for voice clarity
+- `Level` mode for loudness smoothing across scenes/episodes
+- Per-site and per-tab memory scope
+- Popup controls + extension command presets (`Ctrl+Shift+0..6`, plus `Ctrl+Shift+9` for `50%`)
 
-## Development & Build Instructions
-Built inside a robust Vite + Vanilla TypeScript environment, compiling straight into declarative V3/V2 Cross-Browser manifests.
+## Tech Stack
+- Vite + TypeScript
+- WebExtension architecture (popup, content script, background worker)
+- Shared browser API via `webextension-polyfill`
 
+## Build
 ```bash
-# Install dependencies
 npm install
-
-# Build for Google Chrome (Manifest V3)
-npm run build:chrome
-
-# Build for Mozilla Firefox (Manifest V2)
-npm run build:firefox
+npm run build
 ```
-*Compiled unpacked extensions will natively populate directly into the local `/dist/` folder.*
 
-## Future Roadmap (V2.0.0)
-Refer internally to `V2_ROADMAP.md` for architectural blueprints detailing the upcoming implementation processes covering domain-isolated storage caches, a full 5-band peaking graphic EQ cascade, and explicit `chrome.commands` OS overrides!
+Artifacts:
+- Firefox: `dist/firefox`
+- Chrome: `dist/chrome`
+
+## CI
+GitHub Actions runs install + full build on push and pull requests:
+- [ci.yml](.github/workflows/ci.yml)
+
+## v1.4.0 Highlights
+1. Shortcut migration to extension commands.
+- Preset shortcuts now use `manifest.commands` + `browser.commands.onCommand` for better compatibility.
+- Popup quick keys (`0-6`, `9`) remain available with hover hints.
+
+2. Automated type safety checks.
+- Added `npm run typecheck` (`tsc --noEmit`) and CI enforcement before build.
+
+3. State persistence hardening.
+- Added hostname normalization and fallback key strategy for site-scoped settings.
+- Added migration from legacy top-level storage keys into the current `settings` shape.
+- Improved behavior for tabs with missing or special-case URLs.
+
+4. UX clarity improvements.
+- Updated EQ label from `Flat` to `Balanced`.
+- Clarified `Dialog` and `Level` interaction text and tooltips in the popup.
+
+## v2.0 Direction
+For major architectural work (multi-band EQ UI, deeper profile model, and larger messaging changes), see [V2_ROADMAP.md](V2_ROADMAP.md).

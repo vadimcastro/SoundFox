@@ -4,6 +4,17 @@ browser.runtime.onInstalled.addListener(() => {
   console.log("SoundFox installed.");
 });
 
+const commandVolumeMap: Record<string, number> = {
+  "preset-0": 0,
+  "preset-50": 0.5,
+  "preset-100": 1,
+  "preset-200": 2,
+  "preset-300": 3,
+  "preset-400": 4,
+  "preset-500": 5,
+  "preset-600": 6
+};
+
 function updateBadge(volume: number) {
   // Gracefully handle MV2 vs MV3 browser implementations natively
   const actionAPI = browser.action || browser.browserAction;
@@ -21,6 +32,20 @@ function updateBadge(volume: number) {
       actionAPI.setBadgeBackgroundColor({ color: "#3b82f6" }).catch(() => {}); // Blue = Standard
     }
   }
+}
+
+async function setActiveTabVolume(volume: number) {
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+    if (!activeTab?.id) return;
+
+    await browser.tabs.sendMessage(activeTab.id, {
+      action: "setVolume",
+      value: volume
+    });
+    updateBadge(volume);
+  } catch (e) {}
 }
 
 async function updateBadgeForTab(tabId: number) {
@@ -50,6 +75,12 @@ browser.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
   if (tab.active && tab.url) {
     updateBadgeForTab(tabId);
   }
+});
+
+browser.commands.onCommand.addListener((command) => {
+  const volume = commandVolumeMap[command];
+  if (volume === undefined) return;
+  setActiveTabVolume(volume);
 });
 
 // Live hydration broadcast from Popup inputs across the DOM

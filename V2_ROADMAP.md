@@ -1,43 +1,69 @@
-# SoundFox V2 Architectural Roadmap
+# SoundFox v2.0 Roadmap
 
-## Proposed Versioning: v2.0.0
-Given the massive scope of the upcoming upgrades—specifically fundamentally altering the core data storage structure and expanding the underlying C++ WebAudio graph topology natively—these features represent a major architectural shift warranting a definitive **v2.0.0** Major System Upgrade.
+## Goal
+Ship a major architecture upgrade centered on richer EQ controls and cleaner extension-level command handling, while preserving cross-browser behavior.
 
----
+## Current Baseline (v1.4.0)
+Already implemented:
+- Per-site settings storage model (`settings[siteKey]` with hostname/origin fallback)
+- Per-tab temporary scope (`sessionStorage`)
+- Flat/Bass EQ, Dialog mode, Auto-Level mode
+- Popup + content-script message flow
+- Extension command-based preset shortcuts
+- CI typecheck gate (`tsc --noEmit`)
 
-## 1. Domain-Specific Memory Profiles (Per-Site Saving)
-Currently, `browser.storage.local` persists a flat, global state (e.g., `{ volume: 1.5 }`). This intrinsically forces unintended overrides when natively switching contexts between isolated platforms (e.g., a quiet Bflix movie vs. an explosive YouTube video). V2 will implement a URL-keyed nested storage matrix algorithm mapping variables to hosts natively.
+This means v2 should focus on true major capability expansion, not re-implementing the current baseline.
 
-### Execution Blueprint:
-*   **Popup / Background Polling:** The Extension Popup `main.ts` must definitively query the active tab's hostname string (`new URL(tab.url).hostname`) prior to dispatching state commands globally.
-*   **Nested Dictionary Storage Arrays:** 
-    Modify all `browser.storage.local.set` functions to strictly manipulate a targeted host-level dictionary natively:
-    ```json
-    {
-      "settings": {
-        "youtube.com": { "volume": 1.0, "eq": "flat", "dialogMode": false },
-        "bflix.sh": { "volume": 4.0, "eq": "flat", "dialogMode": true }
-      }
-    }
-    ```
-*   **Content Script Hydration Check:** Update the initialization framework in `content.ts` to instantly parse `window.location.hostname` upon episodic binding sequences natively extracting exclusively its own configuration variables dynamically!
+## v2.0 Implementation Task List
 
----
+### 1. Schema and Migration Foundation
+- Define `settingsSchemaVersion` and typed `SoundFoxSettingsV2`.
+- Add `eqBands` as a five-slot numeric tuple with safe defaults.
+- Implement migration pipeline for legacy and v1 storage shapes into v2.
+- Add migration tests for missing/corrupt/partial persisted data.
 
-## 2. 5-Band Graphic Equalizer
-Expanding the binary `Flat`/`Bass` graphical toggle into a heavily comprehensive 5-band C++ graphic equalizer natively utilizing cascaded peaking filters across the WebAudio API audio thread matrices.
+### 2. Audio Engine Refactor for 5-Band EQ
+- Replace the single lowshelf node with five peaking filters (`60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
+- Define deterministic DSP graph order with `Dialog` and `Level` modes.
+- Add gain clamping policy for each band.
+- Ensure SPA/media rebind paths preserve live EQ state.
 
-### Execution Blueprint:
-*   **Context Hardware Expansion:** Inside `content.ts -> initAudioContext()`, physically replace the singular `biquadFilter` variable with a sequential array of standard `BiquadFilterNode` objects specifically configured as `.type = "peaking"` hardware filters locked onto exact frequency ranges (e.g., `60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
-*   **UI Overlay Transformation:** Design a secondary graphical tray inside the `index.html` DOM utilizing vertical-rotated `<input type="range">` elements natively mapping exact dB variations across `-15dB` to `+15dB`.
-*   **IPC Payload Updates:** Modify the `setEq` messaging payload structure from a static text string (e.g., `"bass"`) explicitly to a payload array buffer natively (e.g., `[10, 5, 0, -2, -5]`).
+### 3. Messaging Contract v2
+- Add message actions for `setEqBands`, `getStateV2`, and `resetEqPreset`.
+- Keep temporary compatibility for current string-based EQ actions during transition.
+- Validate message payloads and reject malformed updates safely.
 
----
+### 4. Popup UI Expansion
+- Replace the current Balanced/Bass toggle with five EQ band controls.
+- Add quick presets (`Balanced`, `Bass Boost`, `Dialog Focus`, `Reset`).
+- Keep popup layout within compact browser extension constraints.
+- Make memory scope effects clear near EQ controls.
 
-## 3. Dedicated Hardware Command Shortcuts
-Currently, volume presets (`0-6`) are rigidly hardcoded utilizing native `document.addEventListener('keydown')` DOM listeners inherently injected straight into the active webpage. While functional, it risks blocking embedded media key binds natively. V2 explicitly migrates all inputs exclusively to the `chrome.commands` WebExtension API logic.
+### 5. Scope and Host Matching Consistency
+- Finalize canonical site-key behavior and subdomain inheritance policy.
+- Align all persistence read/write paths to one shared resolver.
+- Add edge-case handling tests for `about:blank`, `file:`, and restricted URLs.
 
-### Execution Blueprint:
-*   **Manifest Registration Rules:** Map explicit hardware hooks natively straight into `manifest.json` under the official `"commands"` property, linking them fundamentally to extension-level background directives.
-*   **Background Hook Dispatcher:** Deploy `browser.commands.onCommand` listeners inside `background.ts`. When triggered natively by the OS, explicitly dispatch `browser.tabs.sendMessage(..., { action: 'setVolume' })` straight into the isolated content script payload natively.
-*   **User Modifiability:** Operating specifically on the `"commands"` API natively forces modern Chrome and Firefox browsers to automatically inject a visual "Keyboard Shortcuts" UI panel directly inside the extension's settings page, legally and dynamically permitting the user to physically override and construct their own macro presets!
+### 6. Shortcut and Command Follow-Through
+- Keep volume commands stable.
+- Optionally add command actions for EQ preset cycling/reset.
+- Document default bindings and remapping behavior for Firefox and Chrome.
+
+### 7. Testing and QA
+- Add unit coverage for migration and settings coercion utilities.
+- Add integration checks for popup/background/content message flow.
+- Run manual site matrix validation on major streaming targets.
+- Maintain regression checks for mute, memory scope, and mode interactions.
+
+### 8. Release and Rollout
+- Update docs and release notes for v2 behavior changes.
+- Bump version metadata to `2.0.0`.
+- Validate Firefox/Chrome bundles before submission.
+- Tag `v2.0.0`, push, create PR, merge, and submit to stores.
+
+## Execution Note
+- Before implementation starts, convert each section above into GitHub issues with: clear title, acceptance criteria, dependencies, estimate, and owner.
+
+## Versioning Recommendation
+- `v1.4.0` is the hardening release for commands migration, CI typecheck, and persistence robustness.
+- Reserve `v2.0.0` for release containing full 5-band EQ plus storage/messaging schema changes.

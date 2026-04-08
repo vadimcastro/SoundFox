@@ -15,6 +15,100 @@ let currentDialogMode = false;
 let currentAutoLevel = false;
 let currentMemoryScope: "site" | "tab" = "site";
 
+type PersistedSettings = {
+  volume?: number;
+  eq?: string;
+  dialogMode?: boolean;
+  autoLevel?: boolean;
+};
+
+const FALLBACK_SITE_KEY = "__default__";
+
+function normalizeHostname(hostname: string): string {
+  const normalized = hostname.trim().toLowerCase();
+  return normalized.startsWith("www.") ? normalized.slice(4) : normalized;
+}
+
+function getSiteStorageCandidates(): string[] {
+  const candidates = new Set<string>();
+
+  try {
+    const normalizedHost = normalizeHostname(window.location.hostname || "");
+    if (normalizedHost) {
+      candidates.add(normalizedHost);
+      const parts = normalizedHost.split(".").filter(Boolean);
+      // Fall back from subdomains to parent domain when only parent state exists.
+      for (let i = 1; i < parts.length - 1; i += 1) {
+        candidates.add(parts.slice(i).join("."));
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const origin = window.location.origin;
+    if (origin && origin !== "null") {
+      candidates.add(`origin:${origin.toLowerCase()}`);
+    }
+  } catch (e) {}
+
+  candidates.add(FALLBACK_SITE_KEY);
+  return Array.from(candidates);
+}
+
+function getPrimarySiteStorageKey(): string {
+  return getSiteStorageCandidates()[0] || FALLBACK_SITE_KEY;
+}
+
+function coerceBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function coerceEq(value: unknown): string | undefined {
+  return value === "flat" || value === "bass" ? value : undefined;
+}
+
+function coerceVolume(value: unknown): number | undefined {
+  if (typeof value !== "number" || Number.isNaN(value) || !Number.isFinite(value)) return undefined;
+  return Math.min(6, Math.max(0, value));
+}
+
+function coerceSettings(value: unknown): PersistedSettings {
+  if (!value || typeof value !== "object") return {};
+  const source = value as PersistedSettings;
+  const volume = coerceVolume(source.volume);
+  const eq = coerceEq(source.eq);
+  const dialogMode = coerceBoolean(source.dialogMode);
+  const autoLevel = coerceBoolean(source.autoLevel);
+  return { volume, eq, dialogMode, autoLevel };
+}
+
+function applyStatePatch(patch: PersistedSettings) {
+  if (patch.volume !== undefined) currentVolume = patch.volume;
+  if (patch.eq !== undefined) currentEq = patch.eq;
+  if (patch.dialogMode !== undefined) currentDialogMode = patch.dialogMode;
+  if (patch.autoLevel !== undefined) currentAutoLevel = patch.autoLevel;
+}
+
+function getSettingsMap(value: unknown): Record<string, PersistedSettings> {
+  return value && typeof value === "object" ? (value as Record<string, PersistedSettings>) : {};
+}
+
+function getScopedSettings(settings: Record<string, PersistedSettings>): PersistedSettings {
+  const candidates = getSiteStorageCandidates();
+  for (const key of candidates) {
+    const entry = coerceSettings(settings[key]);
+    if (
+      entry.volume !== undefined ||
+      entry.eq !== undefined ||
+      entry.dialogMode !== undefined ||
+      entry.autoLevel !== undefined
+    ) {
+      return entry;
+    }
+  }
+  return {};
+}
+
 // Save helper for domain-specific settings
 async function saveSettings() {
   if (currentMemoryScope === "tab") {
@@ -27,11 +121,11 @@ async function saveSettings() {
     return;
   }
 
-  const hostname = window.location.hostname;
+  const siteKey = getPrimarySiteStorageKey();
   try {
     const data = await browser.storage.local.get("settings");
-    const settings: Record<string, any> = data.settings || {};
-    settings[hostname] = {
+    const settings = getSettingsMap(data.settings);
+    settings[siteKey] = {
       volume: currentVolume,
       eq: currentEq,
       dialogMode: currentDialogMode,
@@ -43,25 +137,48 @@ async function saveSettings() {
 
 // Async init variables from storage to ensure state persists across video/episode reloads
 try {
-  browser.storage.local.get(["settings", "memoryScope"]).then((data) => {
-    currentMemoryScope = (data.memoryScope as "site" | "tab") || "site";
+  browser.storage.local.get(["settings", "memoryScope", "volume", "eq", "dialogMode", "autoLevel"]).then((data) => {
+    currentMemoryScope = data.memoryScope === "tab" ? "tab" : "site";
     
-    let hostSettings: any = {};
+    let scopedSettings: PersistedSettings = {};
     if (currentMemoryScope === "tab") {
       const tabData = sessionStorage.getItem("soundfox_tab_state");
       if (tabData) {
-        try { hostSettings = JSON.parse(tabData); } catch(e){}
+        try { scopedSettings = coerceSettings(JSON.parse(tabData)); } catch(e){}
       }
     } else {
-      const hostname = window.location.hostname;
-      const settings: Record<string, any> = data.settings || {};
-      hostSettings = settings[hostname] || {};
+      const settings = getSettingsMap(data.settings);
+      scopedSettings = getScopedSettings(settings);
+
+      const legacy = coerceSettings({
+        volume: data.volume,
+        eq: data.eq,
+        dialogMode: data.dialogMode,
+        autoLevel: data.autoLevel
+      });
+      const hasLegacyData =
+        legacy.volume !== undefined ||
+        legacy.eq !== undefined ||
+        legacy.dialogMode !== undefined ||
+        legacy.autoLevel !== undefined;
+      const hasScopedData =
+        scopedSettings.volume !== undefined ||
+        scopedSettings.eq !== undefined ||
+        scopedSettings.dialogMode !== undefined ||
+        scopedSettings.autoLevel !== undefined;
+
+      if (!hasScopedData && hasLegacyData) {
+        const siteKey = getPrimarySiteStorageKey();
+        settings[siteKey] = legacy;
+        scopedSettings = legacy;
+        browser.storage.local
+          .set({ settings })
+          .then(() => browser.storage.local.remove(["volume", "eq", "dialogMode", "autoLevel"]))
+          .catch(() => {});
+      }
     }
 
-    if (hostSettings.volume !== undefined) currentVolume = hostSettings.volume as number;
-    if (hostSettings.eq !== undefined) currentEq = hostSettings.eq as string;
-    if (hostSettings.dialogMode !== undefined) currentDialogMode = hostSettings.dialogMode as boolean;
-    if (hostSettings.autoLevel !== undefined) currentAutoLevel = hostSettings.autoLevel as boolean;
+    applyStatePatch(scopedSettings);
     
     if (audioCtx) {
       if (gainNode) gainNode.gain.value = currentVolume;
@@ -80,29 +197,26 @@ browser.storage.onChanged.addListener((changes, area) => {
   if (currentMemoryScope === "tab") return; // Tab scopes natively do not synchronize backwards globally!
 
   if (area === "local" && changes.settings && changes.settings.newValue) {
-    const hostname = window.location.hostname;
-    const newSettings = changes.settings.newValue as Record<string, any>;
-    const oldSettings = (changes.settings.oldValue as Record<string, any> | undefined) || {};
+    const newSettings = getSettingsMap(changes.settings.newValue);
+    const oldSettings = getSettingsMap(changes.settings.oldValue);
     
-    const hostSettings = newSettings[hostname];
-    const oldHostSettings = oldSettings[hostname] || {};
-    
-    if (!hostSettings) return;
+    const hostSettings = getScopedSettings(newSettings);
+    const oldHostSettings = getScopedSettings(oldSettings);
 
     if (hostSettings.volume !== undefined && hostSettings.volume !== oldHostSettings.volume) {
-      currentVolume = hostSettings.volume as number;
+      currentVolume = hostSettings.volume;
       if (gainNode) gainNode.gain.value = currentVolume;
     }
     if (hostSettings.eq !== undefined && hostSettings.eq !== oldHostSettings.eq) {
-      currentEq = hostSettings.eq as string;
+      currentEq = hostSettings.eq;
       if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
     }
     if (hostSettings.dialogMode !== undefined && hostSettings.dialogMode !== oldHostSettings.dialogMode) {
-      currentDialogMode = hostSettings.dialogMode as boolean;
+      currentDialogMode = hostSettings.dialogMode;
       updateGraphRouting();
     }
     if (hostSettings.autoLevel !== undefined && hostSettings.autoLevel !== oldHostSettings.autoLevel) {
-      currentAutoLevel = hostSettings.autoLevel as boolean;
+      currentAutoLevel = hostSettings.autoLevel;
       updateGraphRouting();
     }
   }
