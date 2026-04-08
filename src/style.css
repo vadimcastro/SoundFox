@@ -239,6 +239,76 @@ input[type=range]::-moz-range-thumb:hover {
   width: 100%;
 }
 
+.eq-panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.eq-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eq-band-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+}
+
+.eq-band-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.eq-band-input {
+  width: 100%;
+}
+
+.eq-band-input::-webkit-slider-runnable-track {
+  height: 8px;
+}
+
+.eq-band-input::-webkit-slider-thumb {
+  height: 16px;
+  width: 12px;
+  margin-top: -4px;
+  border-radius: 4px;
+}
+
+.eq-band-input::-moz-range-track {
+  height: 8px;
+}
+
+.eq-band-input::-moz-range-thumb {
+  height: 16px;
+  width: 12px;
+  border-radius: 4px;
+}
+
+.eq-band-val {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+  font-weight: 700;
+}
+
+.eq-presets-row {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.eq-preset-btn {
+  font-size: 11px;
+  padding: 6px 0;
+}
+
 .toggle-btn.compact {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-border);

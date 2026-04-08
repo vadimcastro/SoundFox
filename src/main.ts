@@ -1,6 +1,13 @@
 import './style.css'
 import browser from "webextension-polyfill";
 
+type EqBandsTuple = [number, number, number, number, number];
+
+const EQ_BAND_LABELS = ["60Hz", "300Hz", "1k", "3k", "12k"] as const;
+const EQ_PRESET_BALANCED: EqBandsTuple = [0, 0, 0, 0, 0];
+const EQ_PRESET_BASS: EqBandsTuple = [8, 4, 0, 0, 0];
+const EQ_PRESET_DIALOG: EqBandsTuple = [-3, -1, 4, 3, 1];
+
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div class="glass-panel">
     <div class="header-row compact">
@@ -34,6 +41,28 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Voice clarity mode. Can run with Level. Bass is disabled while either mode is active.">Dialog</button>
       <button class="toggle-btn compact auto-level" id="btnLevel" title="Loudness smoothing mode. Can run with Dialog. Bass is disabled while either mode is active.">Level <span class="beta-tag">BETA</span></button>
     </div>
+
+    <div class="eq-panel">
+      <div class="slider-label">
+        <span>5-Band EQ</span>
+        <span id="eqSummary">Balanced</span>
+      </div>
+      <div class="eq-sliders">
+        ${EQ_BAND_LABELS.map((label, idx) => `
+          <div class="eq-band-row">
+            <span class="eq-band-label">${label}</span>
+            <input class="eq-band-input" type="range" min="-12" max="12" step="1" value="0" data-idx="${idx}" />
+            <span class="eq-band-val" id="eqVal${idx}">0dB</span>
+          </div>
+        `).join("")}
+      </div>
+      <div class="eq-presets-row">
+        <button class="preset-btn eq-preset-btn" data-preset="balanced">Balanced</button>
+        <button class="preset-btn eq-preset-btn" data-preset="bass">Bass Boost</button>
+        <button class="preset-btn eq-preset-btn" data-preset="dialog">Dialog Focus</button>
+        <button class="preset-btn eq-preset-btn" data-preset="reset">Reset</button>
+      </div>
+    </div>
     <div class="helper-caption">Dialog and Level can run together for combined dynamics control.</div>
     
     <div class="scope-row">
@@ -46,6 +75,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 const volSlider = document.getElementById('volSlider') as HTMLInputElement;
 const volVal = document.getElementById('volVal') as HTMLSpanElement;
+const eqSummary = document.getElementById('eqSummary') as HTMLSpanElement;
+const eqBandInputs = Array.from(document.querySelectorAll<HTMLInputElement>('.eq-band-input'));
+const eqBandVals = Array.from(document.querySelectorAll<HTMLSpanElement>('.eq-band-val'));
+const eqPresetBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('.eq-preset-btn'));
 
 const sendVolMessage = async (gainValue: number) => {
   try {
@@ -127,12 +160,60 @@ const btnScopeTab = document.getElementById('btnScopeTab') as HTMLButtonElement;
 let dialogModeActive = false;
 let autoLevelActive = false;
 let memoryScope: "site" | "tab" = "site";
+let currentEqBands: EqBandsTuple = [...EQ_PRESET_BALANCED];
+
+const areBandsEqual = (a: EqBandsTuple, b: readonly number[]) => a.every((v, i) => v === b[i]);
+
+const coerceEqBands = (value: unknown): EqBandsTuple => {
+  if (!Array.isArray(value) || value.length !== 5) return [...EQ_PRESET_BALANCED];
+  return [
+    Number(value[0]) || 0,
+    Number(value[1]) || 0,
+    Number(value[2]) || 0,
+    Number(value[3]) || 0,
+    Number(value[4]) || 0
+  ];
+};
+
+const updateEqUI = (bands: EqBandsTuple) => {
+  currentEqBands = [...bands];
+  eqBandInputs.forEach((input, idx) => {
+    const value = bands[idx] ?? 0;
+    input.value = String(value);
+    const prefix = value > 0 ? "+" : "";
+    if (eqBandVals[idx]) eqBandVals[idx].innerText = `${prefix}${value}dB`;
+  });
+
+  if (areBandsEqual(currentEqBands, EQ_PRESET_BALANCED)) {
+    eqSummary.innerText = "Balanced";
+  } else if (areBandsEqual(currentEqBands, EQ_PRESET_BASS)) {
+    eqSummary.innerText = "Bass Boost";
+  } else if (areBandsEqual(currentEqBands, EQ_PRESET_DIALOG)) {
+    eqSummary.innerText = "Dialog Focus";
+  } else {
+    eqSummary.innerText = "Custom";
+  }
+};
+
+const sendEqBandsMessage = async (bands: EqBandsTuple) => {
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0] && tabs[0].id) {
+      await browser.tabs.sendMessage(tabs[0].id, { action: "setEqBands", bands });
+      const state: any = await browser.tabs.sendMessage(tabs[0].id, { action: "getState" });
+      if (state) updateDashboard(state);
+    }
+  } catch (e) {}
+};
 
 function updateDashboard(state: any) {
   updateSliderUI(state.volume * 100);
+  const bands = coerceEqBands(state.eqBands);
+  updateEqUI(bands);
 
-  btnEq.classList.toggle("active", state.eq === "flat");
-  btnBass.classList.toggle("active", state.eq === "bass");
+  const isBassCurve = areBandsEqual(currentEqBands, EQ_PRESET_BASS);
+  btnEq.classList.toggle("active", state.eq === "flat" && !isBassCurve);
+  btnBass.classList.toggle("active", state.eq === "bass" || isBassCurve);
   btnDialog.classList.toggle("active", state.dialogMode);
   btnLevel.classList.toggle("active", state.autoLevel);
   dialogModeActive = state.dialogMode;
@@ -228,6 +309,40 @@ btnScopeTab.addEventListener('click', async () => {
       if (state) updateDashboard(state);
     }
   } catch(e) {}
+});
+
+eqBandInputs.forEach((input, idx) => {
+  input.addEventListener("input", () => {
+    const next: EqBandsTuple = [...currentEqBands];
+    next[idx] = parseInt(input.value, 10);
+    updateEqUI(next);
+    sendEqBandsMessage(next);
+  });
+});
+
+eqPresetBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const preset = btn.dataset.preset;
+    if (preset === "balanced" || preset === "reset") {
+      const next: EqBandsTuple = [...EQ_PRESET_BALANCED];
+      updateEqUI(next);
+      sendEqBandsMessage(next);
+      return;
+    }
+
+    if (preset === "bass") {
+      const next: EqBandsTuple = [...EQ_PRESET_BASS];
+      updateEqUI(next);
+      sendEqBandsMessage(next);
+      return;
+    }
+
+    if (preset === "dialog") {
+      const next: EqBandsTuple = [...EQ_PRESET_DIALOG];
+      updateEqUI(next);
+      sendEqBandsMessage(next);
+    }
+  });
 });
 
 // Initial Sync from Active Tab
