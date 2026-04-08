@@ -1,4 +1,5 @@
 import browser from "webextension-polyfill";
+import type { PopupToContentMessage, SoundFoxStateV2 } from "./messages";
 import {
   EQ_BAND_FREQUENCIES,
   DEFAULT_EQ_BANDS,
@@ -320,7 +321,13 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { childList: true, subtree: true });
 
 // Listen for messages from the Popup (Always hits the outer Top Frame)
-browser.runtime.onMessage.addListener((message: any) => {
+function isPopupMessage(message: unknown): message is PopupToContentMessage {
+  return Boolean(message && typeof message === "object" && "action" in message);
+}
+
+browser.runtime.onMessage.addListener((message: unknown) => {
+  if (!isPopupMessage(message)) return;
+
   if (audioCtx && audioCtx.state === "suspended") {
     audioCtx.resume();
   }
@@ -377,13 +384,14 @@ browser.runtime.onMessage.addListener((message: any) => {
     try { browser.storage.local.set({ memoryScope: currentMemoryScope }); } catch(e) {}
     saveSettings();
   } else if (message.action === "getState") {
-    return Promise.resolve({
+    const state: SoundFoxStateV2 = {
       volume: currentVolume,
       eq: currentEq,
       eqBands: currentEqBands,
       dialogMode: currentDialogMode,
       autoLevel: currentAutoLevel,
       memoryScope: currentMemoryScope
-    });
+    };
+    return Promise.resolve(state);
   }
 });
