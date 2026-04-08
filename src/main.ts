@@ -26,7 +26,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <button class="preset-btn" data-val="500" title="500% Volume (5)">5</button>
         <button class="preset-btn" data-val="600" title="600% Volume (6)">6</button>
       </div>
-      <div class="helper-caption">Quick keys in popup: 0-6, 9. Global commands: Ctrl+Shift+0-6, 9.</div>
     </div>
 
     <div class="controls-grid">
