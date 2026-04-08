@@ -14,41 +14,55 @@ Already implemented:
 
 This means v2 should focus on true major capability expansion, not re-implementing the current baseline.
 
-## Proposed v2.0 Scope
+## v2.0 Implementation Task List
 
-### 1. Full 5-Band EQ System
-- Replace single lowshelf toggle with five peaking bands (`60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
-- Persist per-band gains in storage.
-- Update messaging contract from string EQ modes to structured payloads.
+### 1. Schema and Migration Foundation
+- Define `settingsSchemaVersion` and typed `SoundFoxSettingsV2`.
+- Add `eqBands` as a five-slot numeric tuple with safe defaults.
+- Implement migration pipeline for legacy and v1 storage shapes into v2.
+- Add migration tests for missing/corrupt/partial persisted data.
 
-Example shape:
-```json
-{
-  "eqBands": [4, 2, 0, -2, -4]
-}
-```
+### 2. Audio Engine Refactor for 5-Band EQ
+- Replace the single lowshelf node with five peaking filters (`60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
+- Define deterministic DSP graph order with `Dialog` and `Level` modes.
+- Add gain clamping policy for each band.
+- Ensure SPA/media rebind paths preserve live EQ state.
 
-### 2. Commands API Migration
-- Move shortcut handling out of page-level `keydown` listeners.
-- Register commands in manifest and handle them in background.
-- Dispatch command actions to active tabs via `tabs.sendMessage`.
+### 3. Messaging Contract v2
+- Add message actions for `setEqBands`, `getStateV2`, and `resetEqPreset`.
+- Keep temporary compatibility for current string-based EQ actions during transition.
+- Validate message payloads and reject malformed updates safely.
 
-### 3. Storage Model Hardening
-- Introduce explicit schema versioning for stored settings.
-- Add migration utilities so upgrades preserve user state safely.
-- Normalize host matching strategy (subdomain behavior and fallback rules).
+### 4. Popup UI Expansion
+- Replace the current Balanced/Bass toggle with five EQ band controls.
+- Add quick presets (`Balanced`, `Bass Boost`, `Dialog Focus`, `Reset`).
+- Keep popup layout within compact browser extension constraints.
+- Make memory scope effects clear near EQ controls.
 
-### 4. UI Expansion for EQ Editing
-- Add compact but clear 5-band controls in popup.
-- Keep mobile-sized popup constraints in mind.
-- Provide reset/default presets per band set.
+### 5. Scope and Host Matching Consistency
+- Finalize canonical site-key behavior and subdomain inheritance policy.
+- Align all persistence read/write paths to one shared resolver.
+- Add edge-case handling tests for `about:blank`, `file:`, and restricted URLs.
 
-## Suggested Sequence
-1. Define new storage schema + migration path.
-2. Implement 5-band audio graph in content script.
-3. Implement popup EQ UI and messaging integration.
-4. Migrate shortcuts to commands API.
-5. Add regression checks for state persistence and command routing.
+### 6. Shortcut and Command Follow-Through
+- Keep volume commands stable.
+- Optionally add command actions for EQ preset cycling/reset.
+- Document default bindings and remapping behavior for Firefox and Chrome.
+
+### 7. Testing and QA
+- Add unit coverage for migration and settings coercion utilities.
+- Add integration checks for popup/background/content message flow.
+- Run manual site matrix validation on major streaming targets.
+- Maintain regression checks for mute, memory scope, and mode interactions.
+
+### 8. Release and Rollout
+- Update docs and release notes for v2 behavior changes.
+- Bump version metadata to `2.0.0`.
+- Validate Firefox/Chrome bundles before submission.
+- Tag `v2.0.0`, push, create PR, merge, and submit to stores.
+
+## Execution Note
+- Before implementation starts, convert each section above into GitHub issues with: clear title, acceptance criteria, dependencies, estimate, and owner.
 
 ## Versioning Recommendation
 - `v1.4.0` is the hardening release for commands migration, CI typecheck, and persistence robustness.

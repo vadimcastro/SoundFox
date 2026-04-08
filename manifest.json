@@ -20,15 +20,15 @@
   "action": {
     "default_popup": "index.html",
     "default_icon": {
-      "16": "soundfox.png",
-      "48": "soundfox.png",
-      "128": "soundfox.png"
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
     }
   },
   "icons": {
-    "16": "soundfox.png",
-    "48": "soundfox.png",
-    "128": "soundfox.png"
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
   },
   "commands": {
     "preset-0": {
@@ -83,7 +83,6 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "tabCapture",
     "tabs",
     "storage"
   ],
