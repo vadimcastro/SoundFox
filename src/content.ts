@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill";
 import {
+  EQ_BAND_FREQUENCIES,
   DEFAULT_EQ_BANDS,
   SETTINGS_SCHEMA_VERSION,
   coerceSettings,
@@ -7,6 +8,7 @@ import {
   getSiteStorageCandidates,
   hasAnySetting,
   normalizeSiteSettings,
+  resolveEqBandsForMode,
   type EqBandsTuple,
   type EqMode,
   type MemoryScope,
@@ -17,7 +19,7 @@ console.log("SoundFox Content Script attached.");
 
 let audioCtx: AudioContext | null = null;
 let gainNode: GainNode | null = null;
-let biquadFilter: BiquadFilterNode | null = null;
+let eqFilters: BiquadFilterNode[] = [];
 let compressorNode: DynamicsCompressorNode | null = null;
 let levelerNode: DynamicsCompressorNode | null = null;
 const mediaElements = new Set<HTMLMediaElement>();
@@ -34,7 +36,18 @@ function applyStatePatch(patch: PersistedSettingsV2) {
   if (patch.eq !== undefined) currentEq = patch.eq;
   if (patch.dialogMode !== undefined) currentDialogMode = patch.dialogMode;
   if (patch.autoLevel !== undefined) currentAutoLevel = patch.autoLevel;
-  if (patch.eqBands !== undefined) currentEqBands = patch.eqBands;
+  if (patch.eqBands !== undefined) {
+    currentEqBands = patch.eqBands;
+  } else if (patch.eq !== undefined) {
+    currentEqBands = resolveEqBandsForMode(patch.eq);
+  }
+}
+
+function applyEqBandGains() {
+  if (!eqFilters.length) return;
+  for (let i = 0; i < eqFilters.length; i += 1) {
+    eqFilters[i].gain.value = currentEqBands[i] ?? 0;
+  }
 }
 
 // Save helper for domain-specific settings
@@ -135,7 +148,7 @@ try {
     
     if (audioCtx) {
       if (gainNode) gainNode.gain.value = currentVolume;
-      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+      applyEqBandGains();
       updateGraphRouting();
     }
   }).catch(() => {});
@@ -170,9 +183,16 @@ browser.storage.onChanged.addListener((changes, area) => {
       currentVolume = hostSettings.volume;
       if (gainNode) gainNode.gain.value = currentVolume;
     }
+    if (hostSettings.eqBands !== undefined && hostSettings.eqBands !== oldHostSettings.eqBands) {
+      currentEqBands = hostSettings.eqBands;
+      applyEqBandGains();
+    }
     if (hostSettings.eq !== undefined && hostSettings.eq !== oldHostSettings.eq) {
       currentEq = hostSettings.eq;
-      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+      if (hostSettings.eqBands === undefined) {
+        currentEqBands = resolveEqBandsForMode(currentEq);
+        applyEqBandGains();
+      }
     }
     if (hostSettings.dialogMode !== undefined && hostSettings.dialogMode !== oldHostSettings.dialogMode) {
       currentDialogMode = hostSettings.dialogMode;
@@ -186,14 +206,18 @@ browser.storage.onChanged.addListener((changes, area) => {
 });
 
 function updateGraphRouting() {
-  if (!biquadFilter || !compressorNode || !levelerNode || !gainNode) return;
+  if (!eqFilters.length || !compressorNode || !levelerNode || !gainNode) return;
   
   // Decouple everything to reset baseline
-  biquadFilter.disconnect();
+  eqFilters.forEach((filter) => filter.disconnect());
   compressorNode.disconnect();
   levelerNode.disconnect();
 
-  let lastNode: AudioNode = biquadFilter;
+  for (let i = 0; i < eqFilters.length - 1; i += 1) {
+    eqFilters[i].connect(eqFilters[i + 1]);
+  }
+
+  let lastNode: AudioNode = eqFilters[eqFilters.length - 1];
   
   if (currentDialogMode) {
     lastNode.connect(compressorNode);
@@ -212,14 +236,16 @@ function initAudioContext() {
   if (!audioCtx) {
     audioCtx = new window.AudioContext();
     gainNode = audioCtx.createGain();
-    biquadFilter = audioCtx.createBiquadFilter();
+    eqFilters = EQ_BAND_FREQUENCIES.map((frequency, index) => {
+      const filter = audioCtx!.createBiquadFilter();
+      filter.type = "peaking";
+      filter.frequency.value = frequency;
+      filter.Q.value = 1;
+      filter.gain.value = currentEqBands[index] ?? 0;
+      return filter;
+    });
     compressorNode = audioCtx.createDynamicsCompressor();
     levelerNode = audioCtx.createDynamicsCompressor();
-    
-    // Lowshelf filter specifically hits lower frequency bands
-    biquadFilter.type = "lowshelf";
-    biquadFilter.frequency.value = 150; // Boost below 150hz
-    biquadFilter.gain.value = 0; // Starts flat
 
     // Dialog Mode (Micro-dynamics: Soften hard peaks, boost dialogue)
     compressorNode.threshold.value = -45; 
@@ -235,29 +261,30 @@ function initAudioContext() {
     levelerNode.attack.value = 0.005; // Lightning fast 5ms transient crush absolutely protecting ears from blasts
     levelerNode.release.value = 1.0;
 
-    // Default Node Topology (PROTOTYPE BASELINE: Bypasses Compressor Entirely)
-    biquadFilter.connect(gainNode);
+    // Terminal output connection. Upstream routing is handled in updateGraphRouting.
     gainNode.connect(audioCtx.destination); 
+    applyEqBandGains();
+    updateGraphRouting();
   }
 }
 
 function bindMediaElement(el: HTMLMediaElement) {
   if (mediaElements.has(el)) return;
   initAudioContext();
-  if (audioCtx && biquadFilter) {
+  if (audioCtx && eqFilters.length) {
     try {
       const source = audioCtx.createMediaElementSource(el);
-      source.connect(biquadFilter);
+      source.connect(eqFilters[0]);
       mediaElements.add(el);
       
       if (gainNode) gainNode.gain.value = currentVolume;
-      if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+      applyEqBandGains();
       updateGraphRouting();
       
       // Bind seamlessly to SPA episode jumps to explicitly map variables
       el.addEventListener('loadeddata', () => {
         if (gainNode) gainNode.gain.value = currentVolume;
-        if (biquadFilter) biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
+        applyEqBandGains();
         updateGraphRouting();
       });
       
@@ -311,29 +338,38 @@ browser.runtime.onMessage.addListener((message: any) => {
       }
     }
   } else if (message.action === "setEq") {
-    currentEq = message.mode;
+    const nextMode: EqMode = message.mode === "bass" ? "bass" : "flat";
+    currentEq = nextMode;
+    currentEqBands = resolveEqBandsForMode(nextMode);
     saveSettings();
-    if (biquadFilter && audioCtx) {
-      biquadFilter.gain.value = currentEq === "bass" ? 15 : 0;
-    }
+    applyEqBandGains();
+  } else if (message.action === "setEqBands") {
+    const nextSettings = coerceSettings({ eqBands: message.bands });
+    if (!nextSettings.eqBands) return;
+    currentEq = "flat";
+    currentEqBands = nextSettings.eqBands;
+    saveSettings();
+    applyEqBandGains();
   } else if (message.action === "setDialogMode") {
     currentDialogMode = message.active;
     if (currentDialogMode) {
       currentEq = "flat";
-      if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
+      currentEqBands = [...DEFAULT_EQ_BANDS];
+      applyEqBandGains();
     }
     saveSettings();
-    if (compressorNode && biquadFilter && gainNode && audioCtx) {
+    if (compressorNode && eqFilters.length && gainNode && audioCtx) {
       updateGraphRouting();
     }
   } else if (message.action === "setAutoLevel") {
     currentAutoLevel = message.active;
     if (currentAutoLevel) {
       currentEq = "flat";
-      if (biquadFilter && audioCtx) biquadFilter.gain.value = 0;
+      currentEqBands = [...DEFAULT_EQ_BANDS];
+      applyEqBandGains();
     }
     saveSettings();
-    if (levelerNode && biquadFilter && gainNode && audioCtx) {
+    if (levelerNode && eqFilters.length && gainNode && audioCtx) {
       updateGraphRouting();
     }
   } else if (message.action === "setMemoryScope") {

@@ -2,6 +2,7 @@ export const SETTINGS_SCHEMA_VERSION = 2;
 export const FALLBACK_SITE_KEY = "__default__";
 export const EQ_BAND_FREQUENCIES = [60, 300, 1000, 3000, 12000] as const;
 export const DEFAULT_EQ_BANDS: EqBandsTuple = [0, 0, 0, 0, 0];
+export const DEFAULT_BASS_EQ_BANDS: EqBandsTuple = [8, 4, 0, 0, 0];
 
 export type EqBandsTuple = [number, number, number, number, number];
 export type MemoryScope = "site" | "tab";
@@ -100,6 +101,10 @@ export function coerceSettings(value: unknown): PersistedSettingsV2 {
   return { volume, eq, dialogMode, autoLevel, eqBands };
 }
 
+export function resolveEqBandsForMode(mode: EqMode | undefined): EqBandsTuple {
+  return mode === "bass" ? [...DEFAULT_BASS_EQ_BANDS] : [...DEFAULT_EQ_BANDS];
+}
+
 export function hasAnySetting(value: PersistedSettingsV2): boolean {
   return (
     value.volume !== undefined ||
@@ -145,18 +150,20 @@ export function normalizeSiteSettings({
   });
 
   if (!hasAnySetting(scoped) && hasAnySetting(legacySettings)) {
+    const eqBands = legacySettings.eqBands || resolveEqBandsForMode(legacySettings.eq);
     settingsMap[siteKey] = {
       ...legacySettings,
-      eqBands: legacySettings.eqBands || DEFAULT_EQ_BANDS
+      eqBands
     };
     scoped = settingsMap[siteKey];
     didMutate = true;
   }
 
   if (hasAnySetting(scoped) && !scoped.eqBands) {
+    const eqBands = resolveEqBandsForMode(scoped.eq);
     settingsMap[siteKey] = {
       ...scoped,
-      eqBands: DEFAULT_EQ_BANDS
+      eqBands
     };
     scoped = settingsMap[siteKey];
     didMutate = true;
