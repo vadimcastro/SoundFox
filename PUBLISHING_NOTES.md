@@ -1,11 +1,44 @@
-# SoundFox Store Compliance & Publishing Justifications
+# SoundFox Publishing Notes
 
-## Build Matrix Requirements
-When finalizing your active compilation, manually executing `npm run build` will actively generate **BOTH** the `dist/firefox` and `dist/chrome` bundles mechanically via NPM logic triggers. Because you are primarily debugging and targeting the Mozilla Add-ons marketplace locally, **you must prioritize loading explicitly from your unpacked `/dist/firefox/` directory!** VITE natively generates Mozilla-compliant `browser_specific_settings` and `gecko` validation IDs explicitly inside that bundle wrapper.
+This file tracks practical release steps for Firefox Add-ons and Chrome Web Store submissions.
 
-## Overarching Permissions Justification
-When submitting SoundFox to the Chrome Web Store or Firefox Add-ons marketplace, the automated review systems will flag the explicit `<all_urls>` host requirement in the `manifest.json`.
+## Build Targets
+Run:
+```bash
+npm run build
+```
 
-Please copy and paste the following statement verbatim into your Privacy Policy or the "Permissions Justification" dialogue field during the store submission pipeline:
+This creates both bundles:
+- `dist/firefox` (Firefox package/load target)
+- `dist/chrome` (Chrome package/load target)
 
-> "SoundFox requires standard `<all_urls>` host permissions to legally bypass CORS (Cross-Origin Resource Sharing) audio restrictions across dynamic streaming platforms such as YouTube and Netflix. This strict security override is exclusively utilized to bind a raw DOM MediaElementAudioSourceNode to our local, offline WebAudio graph, ensuring volume multipliers render identically regardless of the host's server delivery policies. SoundFox does not collect, access, read, read cookies from, nor transmit any user data whatsoever over the network."
+For Mozilla review testing, load the unpacked extension from `dist/firefox`.
+
+## Release Checklist
+1. Confirm version is aligned in:
+- `manifest.json`
+- `package.json`
+- `package-lock.json`
+- Popup version label in `src/main.ts`
+- `README.md`
+
+2. Run local validation:
+```bash
+npm run build
+```
+
+3. Confirm CI is green for the release branch/PR:
+- `.github/workflows/ci.yml`
+
+4. Submit the correct bundle per store:
+- Firefox Add-ons: package from `dist/firefox`
+- Chrome Web Store: package from `dist/chrome`
+
+## Permissions Justification (`<all_urls>`)
+Use this in store submission fields when reviewers ask why host permissions are required:
+
+> SoundFox requires `<all_urls>` host permissions to attach a local WebAudio processing graph to media elements across streaming sites. The permission is used only to apply user-requested audio controls (volume, EQ, dialog, and leveling) consistently on supported pages. SoundFox does not collect, sell, or transmit personal browsing data.
+
+## Notes
+- Keep release notes focused on user-visible changes and risk level.
+- If permission scope changes, update this document before submission.
