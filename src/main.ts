@@ -17,23 +17,25 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       </div>
       <input type="range" id="volSlider" min="0" max="600" value="100" />
       <div class="presets-row">
-        <button class="preset-btn" data-val="0" title="Mute">0</button>
-        <button class="preset-btn" data-val="50" title="50% Volume">1/2</button>
-        <button class="preset-btn" data-val="100" title="100% Volume">1</button>
-        <button class="preset-btn" data-val="200" title="200% Volume">2</button>
-        <button class="preset-btn" data-val="300" title="300% Volume">3</button>
-        <button class="preset-btn" data-val="400" title="400% Volume">4</button>
-        <button class="preset-btn" data-val="500" title="500% Volume">5</button>
-        <button class="preset-btn" data-val="600" title="600% Volume">6</button>
+        <button class="preset-btn" data-val="0" title="Mute (0)">0</button>
+        <button class="preset-btn" data-val="50" title="50% Volume (9)">1/2</button>
+        <button class="preset-btn" data-val="100" title="100% Volume (1)">1</button>
+        <button class="preset-btn" data-val="200" title="200% Volume (2)">2</button>
+        <button class="preset-btn" data-val="300" title="300% Volume (3)">3</button>
+        <button class="preset-btn" data-val="400" title="400% Volume (4)">4</button>
+        <button class="preset-btn" data-val="500" title="500% Volume (5)">5</button>
+        <button class="preset-btn" data-val="600" title="600% Volume (6)">6</button>
       </div>
+      <div class="helper-caption">Quick keys in popup: 0-6, 9. Global commands: Ctrl+Shift+0-6, 9.</div>
     </div>
 
     <div class="controls-grid">
       <button class="toggle-btn active compact" id="btnEq" title="Standard uncolored audio output">Flat</button>
       <button class="toggle-btn compact" id="btnBass" title="Applies a +15dB filter to amplify tracking bass frequencies">Bass</button>
-      <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Squashes loud peaks and bumps up quiet voices in intense media">Dialog</button>
-      <button class="toggle-btn compact auto-level" id="btnLevel" title="Smoothly rides the volume fader across different episodes to prevent massive drops or jumps in overall scene volume">Level <span class="beta-tag">BETA</span></button>
+      <button class="toggle-btn compact dialog-mode" id="btnDialog" title="Voice clarity mode. Can run with Level. Bass is disabled while either mode is active.">Dialog</button>
+      <button class="toggle-btn compact auto-level" id="btnLevel" title="Loudness smoothing mode. Can run with Dialog. Bass is disabled while either mode is active.">Level <span class="beta-tag">BETA</span></button>
     </div>
+    <div class="helper-caption">Dialog and Level can run together for combined dynamics control.</div>
     
     <div class="scope-row">
       <span class="memory-label">Memory Engine</span>
@@ -78,10 +80,25 @@ const updateSliderUI = (val: number) => {
   }
 }
 
-volSlider.addEventListener('input', (e) => {
-  const val = parseInt((e.target as HTMLInputElement).value);
+const applyPresetValue = (val: number) => {
   updateSliderUI(val);
   sendVolMessage(val / 100);
+};
+
+const keyPresetMap: Record<string, number> = {
+  "0": 0,
+  "1": 100,
+  "2": 200,
+  "3": 300,
+  "4": 400,
+  "5": 500,
+  "6": 600,
+  "9": 50
+};
+
+volSlider.addEventListener('input', (e) => {
+  const val = parseInt((e.target as HTMLInputElement).value);
+  applyPresetValue(val);
 });
 
 // Configure 0-6 Presets
@@ -89,9 +106,16 @@ const presetBtns = document.querySelectorAll('.preset-btn');
 presetBtns.forEach(btn => {
   btn.addEventListener('click', (e) => {
     const val = parseInt((e.target as HTMLButtonElement).getAttribute('data-val')!);
-    updateSliderUI(val);
-    sendVolMessage(val / 100);
+    applyPresetValue(val);
   });
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const preset = keyPresetMap[e.key];
+  if (preset === undefined) return;
+  e.preventDefault();
+  applyPresetValue(preset);
 });
 
 const btnEq = document.getElementById('btnEq') as HTMLButtonElement;
