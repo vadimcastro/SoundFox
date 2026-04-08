@@ -1,5 +1,5 @@
 # SoundFox 🦊
-**Release: v1.3.0**
+**Release: v1.3.5**
 
 A powerful, entirely local, hardware-accelerated WebAudio extension that elegantly resolves streaming audio discrepancies (quiet dialogue, deafening action scenes, and massive disparities between episodes or streaming platforms).
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SoundFox",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Sound booster & master for your browser.",
   "browser_specific_settings": {
     "gecko": {
