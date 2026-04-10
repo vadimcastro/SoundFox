@@ -5,7 +5,7 @@ SoundFox is a local-first browser extension that stabilizes and boosts streaming
 
 ## What It Does Today
 - Volume boost from `0%` to `600%`
-- EQ toggle: `Balanced` or `Bass`
+- Quick EQ modes: `Balanced` or `Bass`
 - Optional Advanced 5-band EQ (collapsible)
 - `Dialog` mode for voice clarity
 - `Level` mode for loudness smoothing across scenes/episodes
@@ -43,6 +43,20 @@ GitHub Actions runs install + full build on push and pull requests:
 3. UX polish and release hardening.
 - Improved EQ panel presentation and spacing behavior.
 - Kept baseline quick controls (`Balanced`, `Bass`, `Dialog`, `Level`) as primary UX.
+
+## v1.4.0 Highlights
+1. Command and interaction hardening.
+- Improved extension shortcut handling and preset hints behavior in the popup.
+- Stabilized mode behavior across reload and active-tab changes.
+
+2. Firefox submission compatibility fixes.
+- Removed unsupported permission usage flagged during AMO review.
+- Corrected icon sizing/mapping to expected manifest dimensions.
+
+## Roadmap Status
+- v2 baseline work is already underway (schema versioning + 5-band engine + scoped settings normalization).
+- Remaining major items: messaging v2 completion, automated migration/edge-case tests, and final EQ UX decision.
+- Active planning and execution tracker: [V2_ROADMAP.md](V2_ROADMAP.md).
 
 ## v2.0 Direction
 For major architectural work (multi-band EQ UI, deeper profile model, and larger messaging changes), see [V2_ROADMAP.md](V2_ROADMAP.md).

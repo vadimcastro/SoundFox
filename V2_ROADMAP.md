@@ -1,5 +1,7 @@
 # SoundFox v2.0 Roadmap
 
+Last updated: `2026-04-08`
+
 ## Goal
 Ship a major architecture upgrade centered on richer EQ controls and cleaner extension-level command handling, while preserving cross-browser behavior.
 
@@ -11,68 +13,90 @@ Ship a major architecture upgrade centered on richer EQ controls and cleaner ext
 - Makes work parallelizable and trackable: task-to-issue conversion with acceptance criteria supports faster execution and clearer ownership.
 - Positions the project for a clean `2.0.0` launch instead of incremental feature drift.
 
-## Current Baseline (v1.5.0)
-Already implemented:
-- Per-site settings storage model (`settings[siteKey]` with hostname/origin fallback)
-- Per-tab temporary scope (`sessionStorage`)
-- Flat/Bass EQ, Dialog mode, Auto-Level mode
-- Optional collapsible Advanced 5-band EQ controls in popup
-- Popup + content-script message flow
-- Extension command-based preset shortcuts
-- CI typecheck gate (`tsc --noEmit`)
+## Progress Snapshot
+Status legend:
+- `[x]` Completed
+- `[~]` In progress
+- `[ ]` Not started
 
-This means v2 should focus on true major capability expansion, not re-implementing the current baseline.
+### Since v1.4.0 and v1.5.0
+- `[x]` Advanced 5-band EQ support is live in engine and popup (collapsible by default).
+- `[x]` `settingsSchemaVersion` and typed settings coercion are in place (`SETTINGS_SCHEMA_VERSION = 2`).
+- `[x]` Legacy-to-scoped settings normalization path exists for site-scoped persistence.
+- `[x]` Canonical site candidate resolution includes normalized host, subdomain fallback, origin fallback, and default key.
+- `[x]` Dialog/Level toggle handling corrected to use live state and avoid unintended dual toggles.
+- `[x]` Popup layout hardening completed for no-cutoff rendering with tighter spacing.
+- `[x]` Firefox packaging warnings resolved (`tabCapture` removed, fixed 16/48/128 icon mapping).
 
-## v2.0 Implementation Task List
+## v2.0 Workstreams
 
 ### 1. Schema and Migration Foundation
-- Define `settingsSchemaVersion` and typed `SoundFoxSettingsV2`.
-- Add `eqBands` as a five-slot numeric tuple with safe defaults.
-- Implement migration pipeline for legacy and v1 storage shapes into v2.
-- Add migration tests for missing/corrupt/partial persisted data.
+- `[x]` Define `settingsSchemaVersion` and typed v2 settings model.
+- `[x]` Add `eqBands` as a five-slot numeric tuple with safe defaults.
+- `[~]` Migration pipeline for all legacy/v1 shapes is partially implemented via normalization.
+- `[ ]` Add migration tests for missing/corrupt/partial persisted data.
 
 ### 2. Audio Engine Refactor for 5-Band EQ
-- Replace the single lowshelf node with five peaking filters (`60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
-- Define deterministic DSP graph order with `Dialog` and `Level` modes.
-- Add gain clamping policy for each band.
-- Ensure SPA/media rebind paths preserve live EQ state.
+- `[x]` Replace single lowshelf with five peaking filters (`60Hz`, `300Hz`, `1kHz`, `3kHz`, `12kHz`).
+- `[x]` Deterministic graph order for EQ -> Dialog compressor -> Level compressor -> Gain.
+- `[x]` Gain clamping policy for each EQ band.
+- `[x]` SPA/media rebind path preserves live EQ state.
 
 ### 3. Messaging Contract v2
-- Add message actions for `setEqBands`, `getStateV2`, and `resetEqPreset`.
-- Keep temporary compatibility for current string-based EQ actions during transition.
-- Validate message payloads and reject malformed updates safely.
+- `[x]` `setEqBands` action implemented.
+- `[~]` Backward compatibility with existing `setEq`/`getState` flow retained.
+- `[ ]` Add formal `getStateV2` action.
+- `[ ]` Add `resetEqPreset` action.
+- `[ ]` Add stricter payload validation/error responses across message handlers.
 
 ### 4. Popup UI Expansion
-- Replace the current Balanced/Bass toggle with five EQ band controls.
-- Add quick presets (`Balanced`, `Bass Boost`, `Dialog Focus`, `Reset`).
-- Keep popup layout within compact browser extension constraints.
-- Make memory scope effects clear near EQ controls.
+- `[~]` 5-band controls delivered in an expandable advanced section.
+- `[x]` Preset state reflection in EQ summary (`Balanced`, `Bass Boost`, `Dialog Focus`, `Custom`).
+- `[ ]` Add explicit quick preset buttons (`Balanced`, `Bass Boost`, `Dialog Focus`, `Reset`) inside advanced EQ.
+- `[x]` Memory scope control is co-located and visible near EQ area.
 
 ### 5. Scope and Host Matching Consistency
-- Finalize canonical site-key behavior and subdomain inheritance policy.
-- Align all persistence read/write paths to one shared resolver.
-- Add edge-case handling tests for `about:blank`, `file:`, and restricted URLs.
+- `[x]` Canonical site-key candidate strategy implemented.
+- `[~]` Persistence read/write largely uses shared resolver utilities.
+- `[ ]` Add explicit tests for `about:blank`, `file:`, and restricted URLs.
 
 ### 6. Shortcut and Command Follow-Through
-- Keep volume commands stable.
-- Optionally add command actions for EQ preset cycling/reset.
-- Document default bindings and remapping behavior for Firefox and Chrome.
+- `[x]` Volume command presets are stable (`0`, `50`, `100`-`600`).
+- `[ ]` Optional keyboard command actions for EQ preset cycling/reset.
+- `[ ]` Document default bindings and remapping behavior for Firefox and Chrome.
 
 ### 7. Testing and QA
-- Add unit coverage for migration and settings coercion utilities.
-- Add integration checks for popup/background/content message flow.
-- Run manual site matrix validation on major streaming targets.
-- Maintain regression checks for mute, memory scope, and mode interactions.
+- `[ ]` Add unit tests for migration/coercion utilities.
+- `[ ]` Add integration tests for popup/background/content message flow.
+- `[~]` Manual regression checks are active, but not yet formalized as a repeatable matrix.
+- `[ ]` Add explicit regression checklist for mute, memory scope, EQ, Dialog, and Level interactions.
 
 ### 8. Release and Rollout
-- Update docs and release notes for v2 behavior changes.
-- Bump version metadata to `2.0.0`.
-- Validate Firefox/Chrome bundles before submission.
-- Tag `v2.0.0`, push, create PR, merge, and submit to stores.
+- `[~]` v1 bridge releases complete (`v1.4.0`, `v1.5.0`), continuing hardening while v2 closes gaps.
+- `[ ]` Finalize v2 docs and release notes.
+- `[ ]` Bump metadata to `2.0.0`.
+- `[ ]` Validate Firefox/Chrome bundles and store checklists.
+- `[ ]` Tag `v2.0.0`, push, PR, merge, and submit.
 
-## Execution Note
-- Before implementation starts, convert each section above into GitHub issues with: clear title, acceptance criteria, dependencies, estimate, and owner.
+## Revised Next Steps
+1. Add automated tests for `src/settings.ts` migration/coercion paths and host key resolution edge cases.
+2. Implement messaging v2 completion (`getStateV2`, `resetEqPreset`, stricter payload validation) while preserving current compatibility.
+3. Decide on final v2 EQ UX: keep advanced-only model or add explicit quick preset row inside advanced panel.
+4. Write browser-specific shortcut docs and confirm command remap behavior in Firefox and Chrome.
+5. Run a documented manual QA matrix (YouTube, Netflix, Spotify web, Twitch, mixed tab scenarios).
+6. Freeze scope, bump to `2.0.0`, and execute release checklist.
+
+## GitHub Issues Format (Required)
+Create each v2 task as a single issue using this format:
+- `Title`: `[V2] <workstream> - <specific outcome>`
+- `Problem`: one paragraph describing current risk/gap.
+- `Scope`: exact files/modules included and excluded.
+- `Acceptance Criteria`: checklist of observable pass conditions.
+- `Dependencies`: blocking issues/PRs.
+- `Estimate`: S/M/L.
+- `Owner`: assignee.
+- `Validation`: test plan (automated + manual).
 
 ## Versioning Recommendation
-- `v1.5.0` is the hardening + UX bridge release while v2 architecture work continues.
-- Reserve `v2.0.0` for release containing full 5-band EQ plus storage/messaging schema changes.
+- `v1.5.0` remains the hardening + UX bridge release.
+- `v2.0.0` should ship only after messaging v2 completion plus migration/host-matching test coverage.
